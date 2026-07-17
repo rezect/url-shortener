@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Database DatabaseConfig `envPrefix:"DB_"`
+	Server   ServerConfig   `envPrefix:"SERVER_"`
 }
 
 type DatabaseConfig struct {
@@ -20,6 +21,10 @@ type DatabaseConfig struct {
 	SSLMode  string `env:"SSL" envDefault:"disable"`
 }
 
+type ServerConfig struct {
+	BaseURL string `env:"BASE_URL" envDefault:"http://localhost:8000"`
+	Port string	`env:"PORT" envDefault:"8000"`
+}
 
 func LoadConfig() (*Config, error) {
 	if err := godotenv.Load(); err != nil {
