@@ -9,9 +9,30 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-func isLinkExists(ctx context.Context, dbpool *pgxpool.Pool, shortCode string) (bool, error) {
+type Database struct {
+	URL string
+	Pool *pgxpool.Pool
+	Ctx context.Context
+}
+
+func NewDatabase(url string, ctx context.Context) (*Database, error) {
+	pool, err := pgxpool.New(ctx, url)
+	if err != nil {
+		return nil, fmt.Errorf("Error while connecting to database: %v", err)
+	}
+
+	db := &Database{
+		URL: url,
+		Pool: pool,
+		Ctx: ctx,
+	}
+	
+	return db, nil
+}
+
+func (db *Database) isLinkExists(shortCode string) (bool, error) {
 	var isAlreadyExists int
-	err := dbpool.QueryRow(ctx, "SELECT COUNT(*) FROM short_links WHERE short_code=$1", shortCode).Scan(&isAlreadyExists)
+	err := db.Pool.QueryRow(db.Ctx, "SELECT COUNT(*) FROM short_links WHERE short_code=$1", shortCode).Scan(&isAlreadyExists)
 	if err != nil {
 		return false, fmt.Errorf("Error while get info from database: %v", err)
 	}
@@ -35,9 +56,9 @@ func generateShortCode(length int) string {
 	return string(b)
 }
 
-func Create(ctx context.Context, dbpool *pgxpool.Pool, originalUrl string, createdAt time.Time, expiresAt *time.Time, shortCode string) (string, error) {
+func (db *Database) Create(originalUrl string, createdAt time.Time, expiresAt *time.Time, shortCode string) (string, error) {
 	if shortCode != "" {
-		isNewCodeExists, err := isLinkExists(ctx, dbpool, shortCode)
+		isNewCodeExists, err := db.isLinkExists(shortCode)
 		if err != nil {
 			return "", err
 		}
@@ -47,7 +68,7 @@ func Create(ctx context.Context, dbpool *pgxpool.Pool, originalUrl string, creat
 	} else {
 		for {
 			shortCode = generateShortCode(8)
-			isNewCodeExists, err := isLinkExists(ctx, dbpool, shortCode)
+			isNewCodeExists, err := db.isLinkExists(shortCode)
 			if err != nil {
 				return "", err
 			}
@@ -57,7 +78,7 @@ func Create(ctx context.Context, dbpool *pgxpool.Pool, originalUrl string, creat
 		}
 	}
 
-	_, err := dbpool.Exec(ctx, "INSERT INTO short_links (short_code, original_url, created_at, expires_at) VALUES	($1, $2, $3, $4)", shortCode, originalUrl, createdAt, expiresAt)
+	_, err := db.Pool.Exec(db.Ctx, "INSERT INTO short_links (short_code, original_url, created_at, expires_at) VALUES	($1, $2, $3, $4)", shortCode, originalUrl, createdAt, expiresAt)
 	if err != nil {
 		return "", fmt.Errorf("Error while inserting values: %v", err.Error())
 	}
@@ -65,12 +86,8 @@ func Create(ctx context.Context, dbpool *pgxpool.Pool, originalUrl string, creat
 	return shortCode, nil
 }
 
-func Get(ctx context.Context, dbpool *pgxpool.Pool, shortCode string) (bool, error) {
-	return isLinkExists(ctx, dbpool, shortCode)
-}
-
-func Delete(ctx context.Context, dbpool *pgxpool.Pool, shortCode string) error {
-	isCodeExists, err := isLinkExists(ctx, dbpool, shortCode)
+func (db *Database) Delete(shortCode string) error {
+	isCodeExists, err := db.isLinkExists(shortCode)
 	if err != nil {
 		return err
 	}
@@ -78,10 +95,15 @@ func Delete(ctx context.Context, dbpool *pgxpool.Pool, shortCode string) error {
 		return fmt.Errorf("Code \"%v\" doesn't exists", shortCode)
 	}
 
-	_, err = dbpool.Exec(ctx, "DELETE FROM short_links WHERE short_code = $1", shortCode)
+	_, err = db.Pool.Exec(db.Ctx, "DELETE FROM short_links WHERE short_code = $1", shortCode)
 	if err != nil {
 		return fmt.Errorf("Error while deleting code \"%v\" from database: %v", shortCode, err)
 	}
 
 	return nil
+}
+
+func (db *Database) Stop() {
+	db.Ctx.Done()
+	db.Pool.Close()
 }
