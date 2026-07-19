@@ -84,6 +84,16 @@ func (suite *RepoTestSuite) TestDeleteLink() {
 	suite.NoError(err)
 }
 
+func (suite *RepoTestSuite) TestGet() {
+	_, err := suite.conn.Create(context.Background(), originalURL, customAlias, nil, nil)
+	suite.NoError(err)
+
+	link, err := suite.conn.Get(context.Background(), customAlias)
+	suite.NoError(err)
+	suite.Equal(originalURL, link.OriginalUrl)
+	suite.Equal(customAlias, link.ShortCode)
+}
+
 func TestMain(t *testing.T) {
 	suite.Run(t, new(RepoTestSuite))
 }

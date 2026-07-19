@@ -9,6 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rezect/url-shortener/internal/models"
 )
 
 var (
@@ -69,6 +70,21 @@ func (db *Database) Exists(ctx context.Context, shortCode string) (bool, error) 
 	}
 
 	return false, nil
+}
+
+func (db *Database) Get(ctx context.Context, alias string) (*models.ShortLink, error) {
+	var link models.ShortLink
+	err := db.conn.QueryRow(ctx, "SELECT id, short_code, original_url, created_at, expires_at FROM short_links WHERE short_code=$1", alias).Scan(
+		&link.Id,
+		&link.ShortCode,
+		&link.OriginalUrl,
+		&link.CreatedAt,
+		&link.ExpiresAt,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &link, nil
 }
 
 func (db *Database) Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error) {
