@@ -9,8 +9,18 @@ import (
 	"strings"
 	"time"
 
-	"github.com/rezect/url-shortener/internal/repository"
+	"github.com/rezect/url-shortener/internal/models"
 )
+
+type Repository interface {
+	Exists(ctx context.Context, shortCode string) (bool, error)
+
+	Get(ctx context.Context, alias string) (*models.ShortLink, error)
+
+	Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error)
+
+	Delete(ctx context.Context, shortCode string) error
+}
 
 var (
 	ErrInvalidURL   = errors.New("invalid URL")
@@ -20,10 +30,10 @@ var (
 )
 
 type LinkService struct {
-	repo repository.Repository
+	repo Repository
 }
 
-func NewLinkService(db repository.Repository) *LinkService {
+func NewLinkService(db Repository) *LinkService {
 	return &LinkService{
 		repo: db,
 	}
