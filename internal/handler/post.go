@@ -16,10 +16,10 @@ type postLinkData struct {
 	CustomAlias string `json:"custom_alias"`
 }
 
-func (h *HandlerService) HandlerPost_CreateLink(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) HandlerPost_CreateLink(w http.ResponseWriter, r *http.Request) {
 	var linkData postLinkData
 	err := json.NewDecoder(r.Body).Decode(&linkData)
-	if err != nil || linkData.Url == "" || linkData.CustomAlias == "" {
+	if err != nil || linkData.Url == "" {
 		response.WriteJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("Error while decoding input body: %v", err)})
 		return
 	}

@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strings"
-	"testing"
 	"time"
 
 	"github.com/rezect/url-shortener/internal/handler"
@@ -14,15 +13,9 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-var (
-	BaselUrl    = "http://localhost:8000"
-	OriginalUrl = "http://rezect.com/api/v1/shorten"
-	CustomAlias = "rezect"
-)
-
 type PostTestSuite struct {
 	suite.Suite
-	hs *handler.HandlerService
+	hs *handler.Handler
 }
 
 type responseCreatedLink struct {
@@ -33,13 +26,13 @@ type responseCreatedLink struct {
 
 func (suite *PostTestSuite) SetupSuite() {
 	ls := &testhelpers.MockLinkService{}
-	suite.hs = handler.NewHandlerService(ls, BaselUrl)
+	suite.hs = handler.NewHandler(ls, BaseUrl)
 }
 
 func (suite *PostTestSuite) TestCreateLink_OK() {
 	w := httptest.NewRecorder()
 	body := strings.NewReader(fmt.Sprintf(`{"url":"%v","custom_alias":"%v"}`, OriginalUrl, CustomAlias))
-	r := httptest.NewRequest("POST", BaselUrl, body)
+	r := httptest.NewRequest("POST", BaseUrl, body)
 
 	suite.hs.HandlerPost_CreateLink(w, r)
 
@@ -52,14 +45,14 @@ func (suite *PostTestSuite) TestCreateLink_OK() {
 	}
 
 	suite.Equal(OriginalUrl, linkData.OriginalUrl)
-	suite.Equal(fmt.Sprintf(`%v/s/%v`, BaselUrl, CustomAlias), linkData.ShortUrl)
+	suite.Equal(fmt.Sprintf(`%v/s/%v`, BaseUrl, CustomAlias), linkData.ShortUrl)
 	suite.NotEqual(time.Time{}, linkData.CreatedAt)
 }
 
 func (suite *PostTestSuite) TestCreateLink_WrongBody() {
 	w := httptest.NewRecorder()
 	body := strings.NewReader(fmt.Sprintf(`{"wrong_key1":"%v","wrong_key2":"%v"}`, OriginalUrl, CustomAlias))
-	r := httptest.NewRequest("POST", BaselUrl, body)
+	r := httptest.NewRequest("POST", BaseUrl, body)
 
 	suite.hs.HandlerPost_CreateLink(w, r)
 
@@ -69,7 +62,7 @@ func (suite *PostTestSuite) TestCreateLink_WrongBody() {
 func (suite *PostTestSuite) TestCreateLink_AliasExists() {
 	w := httptest.NewRecorder()
 	body := strings.NewReader(fmt.Sprintf(`{"url":"%v","custom_alias":"%v"}`, OriginalUrl, "exists"))
-	r := httptest.NewRequest("POST", BaselUrl, body)
+	r := httptest.NewRequest("POST", BaseUrl, body)
 
 	suite.hs.HandlerPost_CreateLink(w, r)
 
@@ -79,13 +72,9 @@ func (suite *PostTestSuite) TestCreateLink_AliasExists() {
 func (suite *PostTestSuite) TestCreateLink_InvalidAliasOrUrl() {
 	w := httptest.NewRecorder()
 	body := strings.NewReader(fmt.Sprintf(`{"url":"%v","custom_alias":"%v"}`, OriginalUrl, "invalid alias"))
-	r := httptest.NewRequest("POST", BaselUrl, body)
+	r := httptest.NewRequest("POST", BaseUrl, body)
 
 	suite.hs.HandlerPost_CreateLink(w, r)
 
 	suite.Equal(http.StatusBadRequest, w.Code)
-}
-
-func TestMain(t *testing.T) {
-	suite.Run(t, new(PostTestSuite))
 }

@@ -30,3 +30,11 @@ func (ls *MockLinkService) DeleteLink(targetAlias string) error {
 		return service.ErrNotFound
 	}
 }
+
+func (ls *MockLinkService) Redirect(targetAlias string) (string, error) {
+	if targetAlias == "exists" {
+		return "original url", nil
+	} else {
+		return "", service.ErrNotFound
+	}
+}
