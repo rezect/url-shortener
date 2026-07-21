@@ -1,12 +1,11 @@
 package service_test
 
 import (
-	"context"
 	"testing"
 	"time"
 
-	"github.com/rezect/url-shortener/internal/models"
 	"github.com/rezect/url-shortener/internal/service"
+	"github.com/rezect/url-shortener/internal/testhelpers"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -16,33 +15,8 @@ type ServiceTestSuite struct {
 }
 
 func (suite *ServiceTestSuite) SetupSuite() {
-	mockDb := &mockRepository{}
+	mockDb := &testhelpers.MockRepository{}
 	suite.ls = service.NewLinkService(mockDb)
-}
-
-type mockRepository struct{}
-
-func (r *mockRepository) Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error) {
-	return time.Now(), nil
-}
-
-func (r *mockRepository) Get(ctx context.Context, alias string) (*models.ShortLink, error) {
-	createdAt := time.Now()
-	return &models.ShortLink{
-		Id:          1,
-		ShortCode:   "rezect",
-		OriginalUrl: "http://github.com/rezect",
-		CreatedAt:   &createdAt,
-		ExpiresAt:   nil,
-	}, nil
-}
-
-func (r *mockRepository) Exists(ctx context.Context, shortCode string) (bool, error) {
-	return shortCode == "exists", nil
-}
-
-func (r *mockRepository) Delete(ctx context.Context, shortCode string) error {
-	return nil
 }
 
 func (suite *ServiceTestSuite) TestCreateLink_OK() {
