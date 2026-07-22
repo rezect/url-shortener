@@ -12,7 +12,7 @@ import (
 	"github.com/rezect/url-shortener/internal/models"
 )
 
-type Repository interface {
+type LinkRepository interface {
 	Exists(ctx context.Context, shortCode string) (bool, error)
 
 	Get(ctx context.Context, alias string) (*models.ShortLink, error)
@@ -20,6 +20,14 @@ type Repository interface {
 	Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error)
 
 	Delete(ctx context.Context, shortCode string) error
+}
+
+type ClickRepository interface {
+	Create(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error
+
+	GetTotalClicks(ctx context.Context, shortCode string) (int64, error)
+
+	GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error)
 }
 
 var (
@@ -30,16 +38,18 @@ var (
 )
 
 type LinkService struct {
-	repo Repository
+	linkRepo  LinkRepository
+	clickRepo ClickRepository
 }
 
-func NewLinkService(db Repository) *LinkService {
+func NewLinkService(linkRepo LinkRepository, clickRepo ClickRepository) *LinkService {
 	return &LinkService{
-		repo: db,
+		linkRepo:  linkRepo,
+		clickRepo: clickRepo,
 	}
 }
 
-func (ls *LinkService) CreateLink(originUrl string, customAlias string) (string, time.Time, error) {
+func (ls *LinkService) CreateLink(ctx context.Context, originUrl string, customAlias string) (string, time.Time, error) {
 	if err := validateURL(originUrl); err != nil {
 		return "", time.Time{}, ErrInvalidURL
 	}
@@ -48,7 +58,7 @@ func (ls *LinkService) CreateLink(originUrl string, customAlias string) (string,
 			return "", time.Time{}, ErrInvalidAlias
 		}
 
-		isExists, err := ls.repo.Exists(context.Background(), customAlias)
+		isExists, err := ls.linkRepo.Exists(ctx, customAlias)
 		if err != nil {
 			return "", time.Time{}, err
 		}
@@ -58,7 +68,7 @@ func (ls *LinkService) CreateLink(originUrl string, customAlias string) (string,
 	} else {
 		for {
 			customAlias = generateAlias()
-			isExists, err := ls.repo.Exists(context.Background(), customAlias)
+			isExists, err := ls.linkRepo.Exists(ctx, customAlias)
 			if err != nil {
 				return "", time.Time{}, err
 			}
@@ -68,7 +78,7 @@ func (ls *LinkService) CreateLink(originUrl string, customAlias string) (string,
 		}
 	}
 
-	createdAt, err := ls.repo.Create(context.Background(), originUrl, customAlias, nil, nil)
+	createdAt, err := ls.linkRepo.Create(ctx, originUrl, customAlias, nil, nil)
 	if err != nil {
 		return "", time.Time{}, nil
 	}
@@ -76,8 +86,8 @@ func (ls *LinkService) CreateLink(originUrl string, customAlias string) (string,
 	return customAlias, createdAt, nil
 }
 
-func (ls *LinkService) DeleteLink(targetAlias string) error {
-	isExists, err := ls.repo.Exists(context.Background(), targetAlias)
+func (ls *LinkService) DeleteLink(ctx context.Context, targetAlias string) error {
+	isExists, err := ls.linkRepo.Exists(ctx, targetAlias)
 	if err != nil {
 		return err
 	}
@@ -85,7 +95,7 @@ func (ls *LinkService) DeleteLink(targetAlias string) error {
 		return ErrNotFound
 	}
 
-	err = ls.repo.Delete(context.Background(), targetAlias)
+	err = ls.linkRepo.Delete(ctx, targetAlias)
 	if err != nil {
 		return err
 	}
@@ -93,8 +103,8 @@ func (ls *LinkService) DeleteLink(targetAlias string) error {
 	return nil
 }
 
-func (ls *LinkService) Redirect(targetAlias string) (string, error) {
-	isExists, err := ls.repo.Exists(context.Background(), targetAlias)
+func (ls *LinkService) Redirect(ctx context.Context, targetAlias string) (string, error) {
+	isExists, err := ls.linkRepo.Exists(ctx, targetAlias)
 	if err != nil {
 		return "", err
 	}
@@ -102,12 +112,51 @@ func (ls *LinkService) Redirect(targetAlias string) (string, error) {
 		return "", ErrNotFound
 	}
 
-	link, err := ls.repo.Get(context.Background(), targetAlias)
+	link, err := ls.linkRepo.Get(ctx, targetAlias)
 	if err != nil {
 		return "", err
 	}
 
 	return link.OriginalUrl, nil
+}
+
+func (h *LinkService) CreateClick(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
+	if !isAliasValid(shortCode) {
+		return ErrInvalidAlias
+	}
+	// TODO: проверка валидности ip
+
+	// TODO: перенести обработку userAgent, referrer сюда из слоя репозитория
+	err := h.clickRepo.Create(ctx, shortCode, ip, userAgent, referrer)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (h *LinkService) GetTotalClicks(ctx context.Context, shortCode string) (int64, error) {
+	if !isAliasValid(shortCode) {
+		return 0, ErrInvalidAlias
+	}
+	totalClicks, err := h.clickRepo.GetTotalClicks(ctx, shortCode)
+	if err != nil {
+		return 0, err
+	}
+
+	return totalClicks, nil
+}
+
+func (h *LinkService) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
+	if !isAliasValid(shortCode) {
+		return nil, ErrInvalidAlias
+	}
+	totalClicks, err := h.clickRepo.GetDailyClicks(ctx, shortCode)
+	if err != nil {
+		return nil, err
+	}
+
+	return totalClicks, nil
 }
 
 func (h *LinkService) Stop() {}
