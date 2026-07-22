@@ -2,7 +2,6 @@ package repository_test
 
 import (
 	"context"
-	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
@@ -13,21 +12,23 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
-type RepoTestSuite struct {
-	suite.Suite
-	pgContainer *testhelpers.PostgresContainer
-	mainDB      *repository.LinkRepository
-	conn        *repository.LinkRepository
-	tx          pgx.Tx
-	ctx         context.Context
-}
-
 var (
 	originalURL = "https://github.com/rezect/url-shortener"
 	customAlias = "shortener"
 )
 
-func (suite *RepoTestSuite) SetupSuite() {
+type LinkRepoTestSuite struct {
+	suite.Suite
+	pgContainer *testhelpers.PostgresContainer
+
+	mainDB      *repository.LinkRepository
+	conn        *repository.LinkRepository
+	
+	tx          pgx.Tx
+	ctx         context.Context
+}
+
+func (suite *LinkRepoTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.pgContainer = testhelpers.CreatePostgresContainer(suite.T(), suite.ctx)
 
@@ -42,7 +43,7 @@ func (suite *RepoTestSuite) SetupSuite() {
 	suite.conn = nil
 }
 
-func (suite *RepoTestSuite) SetupTest() {
+func (suite *LinkRepoTestSuite) SetupTest() {
 	tx, err := suite.mainDB.BeginTransaction(context.Background())
 	if err != nil {
 		suite.T().Fatal(err)
@@ -53,21 +54,21 @@ func (suite *RepoTestSuite) SetupTest() {
 	suite.tx = tx
 }
 
-func (suite *RepoTestSuite) TearDownTest() {
+func (suite *LinkRepoTestSuite) TearDownTest() {
 	suite.tx.Rollback(context.Background())
 
 	suite.conn = nil
 	suite.tx = nil
 }
 
-func (suite *RepoTestSuite) TestCreateLink() {
+func (suite *LinkRepoTestSuite) TestLink_CreateLink() {
 	createdAt, err := suite.conn.Create(context.Background(), originalURL, customAlias, nil, nil)
 
 	suite.NoError(err)
 	suite.NotEqual(time.Time{}, createdAt)
 }
 
-func (suite *RepoTestSuite) TestExists() {
+func (suite *LinkRepoTestSuite) TestLink_Exists() {
 	isExists, err := suite.conn.Exists(context.Background(), customAlias)
 	suite.NoError(err)
 	suite.False(isExists)
@@ -80,7 +81,7 @@ func (suite *RepoTestSuite) TestExists() {
 	suite.True(isExists)
 }
 
-func (suite *RepoTestSuite) TestDeleteLink() {
+func (suite *LinkRepoTestSuite) TestLink_DeleteLink() {
 	_, err := suite.conn.Create(context.Background(), originalURL, customAlias, nil, nil)
 	suite.NoError(err)
 
@@ -91,7 +92,7 @@ func (suite *RepoTestSuite) TestDeleteLink() {
 	suite.NoError(err)
 }
 
-func (suite *RepoTestSuite) TestGet() {
+func (suite *LinkRepoTestSuite) TestLink_Get() {
 	_, err := suite.conn.Create(context.Background(), originalURL, customAlias, nil, nil)
 	suite.NoError(err)
 
@@ -99,8 +100,4 @@ func (suite *RepoTestSuite) TestGet() {
 	suite.NoError(err)
 	suite.Equal(originalURL, link.OriginalUrl)
 	suite.Equal(customAlias, link.ShortCode)
-}
-
-func TestMain(t *testing.T) {
-	suite.Run(t, new(RepoTestSuite))
 }

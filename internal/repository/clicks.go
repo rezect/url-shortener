@@ -10,31 +10,31 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type ClicksRepository struct {
+type ClickRepository struct {
 	url  string
 	pool *pgxpool.Pool
 	conn Querier
 }
 
-func NewClicksRepository(ctx context.Context, url string, pool *pgxpool.Pool) *ClicksRepository {
-	return &ClicksRepository{
+func NewClickRepository(ctx context.Context, url string, pool *pgxpool.Pool) *ClickRepository {
+	return &ClickRepository{
 		url:  url,
 		pool: pool,
 		conn: pool,
 	}
 }
 
-func (db *ClicksRepository) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
+func (db *ClickRepository) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
 	return db.pool.Begin(ctx)
 }
 
-func (db *ClicksRepository) WithTx(tx pgx.Tx) *ClicksRepository {
+func (db *ClickRepository) WithTx(tx pgx.Tx) *ClickRepository {
 	dbCopy := *db
 	dbCopy.conn = tx
 	return &dbCopy
 }
 
-func (r *ClicksRepository) Create(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
+func (r *ClickRepository) Create(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
 	var ua, ref sql.NullString
 
 	if userAgent != nil {
@@ -62,7 +62,7 @@ func (r *ClicksRepository) Create(ctx context.Context, shortCode string, ip stri
 	return nil
 }
 
-func (r *ClicksRepository) GetTotalClicks(ctx context.Context, shortCode string) (int64, error) {
+func (r *ClickRepository) GetTotalClicks(ctx context.Context, shortCode string) (int64, error) {
 	var totalClicks int64
 
 	err := r.conn.QueryRow(ctx, "SELECT COUNT(*) FROM clicks WHERE short_code = $1", shortCode).Scan(&totalClicks)
@@ -73,7 +73,7 @@ func (r *ClicksRepository) GetTotalClicks(ctx context.Context, shortCode string)
 	return totalClicks, nil
 }
 
-func (r *ClicksRepository) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
+func (r *ClickRepository) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
 	rows, err := r.conn.Query(
 		ctx,
 		`SELECT COUNT(*) as total_clicks, DATE(created_at) as date FROM clicks WHERE short_code = $1 GROUP BY DATE(created_at) ORDER BY DATE(created_at) DESC`,
