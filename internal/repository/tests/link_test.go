@@ -1,4 +1,4 @@
-package repository
+package repository_test
 
 import (
 	"context"
@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/rezect/url-shortener/internal/repository"
 	"github.com/rezect/url-shortener/internal/testhelpers"
 	"github.com/stretchr/testify/require"
 	"github.com/stretchr/testify/suite"
@@ -14,8 +15,8 @@ import (
 type RepoTestSuite struct {
 	suite.Suite
 	pgContainer *testhelpers.PostgresContainer
-	mainDB      *Database
-	conn        *Database
+	mainDB      *repository.Database
+	conn        *repository.Database
 	tx          pgx.Tx
 	ctx         context.Context
 }
@@ -29,7 +30,7 @@ func (suite *RepoTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.pgContainer = testhelpers.CreatePostgresContainer(suite.T(), suite.ctx)
 
-	repository, err := NewDatabase(suite.pgContainer.ConnString, suite.ctx)
+	repository, err := repository.NewDatabase(suite.pgContainer.ConnString, suite.ctx)
 	require.NoError(suite.T(), err)
 	suite.mainDB = repository
 	suite.conn = nil
