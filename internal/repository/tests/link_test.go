@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rezect/url-shortener/internal/repository"
 	"github.com/rezect/url-shortener/internal/testhelpers"
 	"github.com/stretchr/testify/require"
@@ -15,8 +16,8 @@ import (
 type RepoTestSuite struct {
 	suite.Suite
 	pgContainer *testhelpers.PostgresContainer
-	mainDB      *repository.Database
-	conn        *repository.Database
+	mainDB      *repository.LinkRepository
+	conn        *repository.LinkRepository
 	tx          pgx.Tx
 	ctx         context.Context
 }
@@ -30,7 +31,12 @@ func (suite *RepoTestSuite) SetupSuite() {
 	suite.ctx = context.Background()
 	suite.pgContainer = testhelpers.CreatePostgresContainer(suite.T(), suite.ctx)
 
-	repository, err := repository.NewDatabase(suite.pgContainer.ConnString, suite.ctx)
+	pool, err := pgxpool.New(suite.ctx, suite.pgContainer.ConnString)
+	if err != nil {
+		suite.T().Fatal(err)
+	}
+
+	repository := repository.NewLinkRepository(suite.ctx, suite.pgContainer.ConnString, pool)
 	require.NoError(suite.T(), err)
 	suite.mainDB = repository
 	suite.conn = nil

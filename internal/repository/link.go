@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/rezect/url-shortener/internal/models"
 )
@@ -16,50 +15,37 @@ var (
 	ErrNoTransaction = errors.New("transaction is not set")
 )
 
-type Database struct {
+type LinkRepository struct {
 	url  string
 	pool *pgxpool.Pool
 	conn Querier
 }
 
-type Querier interface {
-	Exec(ctx context.Context, sql string, arguments ...interface{}) (pgconn.CommandTag, error)
-	Query(ctx context.Context, sql string, args ...interface{}) (pgx.Rows, error)
-	QueryRow(ctx context.Context, sql string, args ...interface{}) pgx.Row
+func NewLinkRepository(ctx context.Context, url string, pool *pgxpool.Pool) *LinkRepository {
+	return &LinkRepository{
+		url:  url,
+		pool: pool,
+		conn: pool,
+	}
 }
 
-func (db *Database) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
+func (db *LinkRepository) BeginTransaction(ctx context.Context) (pgx.Tx, error) {
 	return db.pool.Begin(ctx)
 }
 
-func (db *Database) WithTx(tx pgx.Tx) *Database {
+func (db *LinkRepository) WithTx(tx pgx.Tx) *LinkRepository {
 	dbCopy := *db
 	dbCopy.conn = tx
 	return &dbCopy
 }
 
-func (db *Database) Stop() {
+func (db *LinkRepository) Stop() {
 	if db.pool != nil {
 		db.pool.Close()
 	}
 }
 
-func NewDatabase(url string, ctx context.Context) (*Database, error) {
-	pool, err := pgxpool.New(ctx, url)
-	if err != nil {
-		return nil, fmt.Errorf("Error while connecting to database: %v", err)
-	}
-
-	db := &Database{
-		url:  url,
-		pool: pool,
-		conn: pool,
-	}
-
-	return db, nil
-}
-
-func (db *Database) Exists(ctx context.Context, shortCode string) (bool, error) {
+func (db *LinkRepository) Exists(ctx context.Context, shortCode string) (bool, error) {
 	var isAlreadyExists int
 	err := db.conn.QueryRow(ctx, "SELECT COUNT(*) FROM short_links WHERE short_code=$1", shortCode).Scan(&isAlreadyExists)
 	if err != nil {
@@ -72,7 +58,7 @@ func (db *Database) Exists(ctx context.Context, shortCode string) (bool, error) 
 	return false, nil
 }
 
-func (db *Database) Get(ctx context.Context, alias string) (*models.ShortLink, error) {
+func (db *LinkRepository) Get(ctx context.Context, alias string) (*models.ShortLink, error) {
 	var link models.ShortLink
 	err := db.conn.QueryRow(ctx, "SELECT id, short_code, original_url, created_at, expires_at FROM short_links WHERE short_code=$1", alias).Scan(
 		&link.Id,
@@ -87,7 +73,7 @@ func (db *Database) Get(ctx context.Context, alias string) (*models.ShortLink, e
 	return &link, nil
 }
 
-func (db *Database) Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error) {
+func (db *LinkRepository) Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error) {
 	var insertedCreatedAt time.Time
 	var err error
 	if createdAt != nil {
@@ -102,7 +88,7 @@ func (db *Database) Create(ctx context.Context, originalUrl string, shortCode st
 	return insertedCreatedAt, nil
 }
 
-func (db *Database) Delete(ctx context.Context, shortCode string) error {
+func (db *LinkRepository) Delete(ctx context.Context, shortCode string) error {
 	_, err := db.conn.Exec(ctx, "DELETE FROM short_links WHERE short_code = $1", shortCode)
 	if err != nil {
 		return fmt.Errorf("Error while deleting code \"%v\" from database: %v", shortCode, err)
