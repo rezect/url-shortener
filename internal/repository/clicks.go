@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rezect/url-shortener/internal/models"
 )
 
 type ClickRepository struct {
@@ -34,7 +35,7 @@ func (db *ClickRepository) WithTx(tx pgx.Tx) *ClickRepository {
 	return &dbCopy
 }
 
-func (r *ClickRepository) Create(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
+func (r *ClickRepository) Create(ctx context.Context, shortCode string, ip string, userAgent, referer *string) error {
 	var ua, ref sql.NullString
 
 	if userAgent != nil {
@@ -42,14 +43,14 @@ func (r *ClickRepository) Create(ctx context.Context, shortCode string, ip strin
 		ua.Valid = true
 	}
 
-	if referrer != nil {
-		ref.String = *referrer
+	if referer != nil {
+		ref.String = *referer
 		ref.Valid = true
 	}
 
 	_, err := r.conn.Exec(
 		ctx,
-		"INSERT INTO clicks (short_code, ip, user_agent, referrer) VALUES	($1, $2, $3, $4)",
+		"INSERT INTO clicks (short_code, ip, user_agent, referer) VALUES	($1, $2, $3, $4)",
 		shortCode,
 		ip,
 		ua,
@@ -76,7 +77,7 @@ func (r *ClickRepository) GetTotalClicks(ctx context.Context, shortCode string) 
 func (r *ClickRepository) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
 	rows, err := r.conn.Query(
 		ctx,
-		`SELECT COUNT(*) as total_clicks, DATE(created_at) as date FROM clicks WHERE short_code = $1 GROUP BY DATE(created_at) ORDER BY DATE(created_at) DESC`,
+		`SELECT COUNT(*) as total_clicks, DATE(clicked_at) as date FROM clicks WHERE short_code = $1 GROUP BY DATE(clicked_at) ORDER BY DATE(created_at) DESC`,
 		shortCode,
 	)
 	if err != nil {
@@ -84,7 +85,7 @@ func (r *ClickRepository) GetDailyClicks(ctx context.Context, shortCode string) 
 	}
 	defer rows.Close()
 
-	var report map[time.Time]int
+	report := make(map[time.Time]int)
 	for rows.Next() {
 		var totalDayClicks int
 		var date time.Time
@@ -96,4 +97,37 @@ func (r *ClickRepository) GetDailyClicks(ctx context.Context, shortCode string) 
 	}
 
 	return &report, nil
+}
+
+func (r *ClickRepository) BatchInsert(ctx context.Context, clicks []models.Click) error {
+	if len(clicks) == 0 {
+		return nil
+	}
+
+	batch := &pgx.Batch{}
+
+	for _, click := range clicks {
+		query := `INSERT INTO clicks (short_code, ip, user_agent, referer) VALUES ($1, $2, $3, $4) RETURNING id`
+		batch.Queue(query, click.ShortCode, click.Ip, click.UserAgent, click.Referer)
+	}
+
+	br := r.conn.SendBatch(ctx, batch)
+	defer br.Close()
+
+	var ids []int64
+	for i := range clicks {
+		var id int64
+		err := br.QueryRow().Scan(&id)
+		if err != nil {
+			return fmt.Errorf("failed to scan row %d: %w", i, err)
+		}
+		ids = append(ids, id)
+		clicks[i].Id = id
+	}
+
+	return nil
+}
+
+func (r *ClickRepository) Stop() {
+	r.pool.Close()
 }

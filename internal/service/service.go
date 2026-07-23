@@ -20,6 +20,8 @@ type LinkRepository interface {
 	Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error)
 
 	Delete(ctx context.Context, shortCode string) error
+
+	Stop()
 }
 
 type ClickRepository interface {
@@ -28,6 +30,8 @@ type ClickRepository interface {
 	GetTotalClicks(ctx context.Context, shortCode string) (int64, error)
 
 	GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error)
+
+	Stop()
 }
 
 var (
@@ -37,24 +41,24 @@ var (
 	ErrNotFound     = errors.New("link not found")
 )
 
-type LinkService struct {
+type Service struct {
 	linkRepo  LinkRepository
 	clickRepo ClickRepository
 }
 
-func NewLinkService(linkRepo LinkRepository, clickRepo ClickRepository) *LinkService {
-	return &LinkService{
+func NewService(linkRepo LinkRepository, clickRepo ClickRepository) *Service {
+	return &Service{
 		linkRepo:  linkRepo,
 		clickRepo: clickRepo,
 	}
 }
 
-func (ls *LinkService) CreateLink(ctx context.Context, originUrl string, customAlias string) (string, time.Time, error) {
+func (ls *Service) CreateLink(ctx context.Context, originUrl string, customAlias string) (string, time.Time, error) {
 	if err := validateURL(originUrl); err != nil {
 		return "", time.Time{}, ErrInvalidURL
 	}
 	if customAlias != "" {
-		if len(customAlias) > 20 || len(customAlias) < 6 || !isAliasValid(customAlias) {
+		if !isAliasValid(customAlias) {
 			return "", time.Time{}, ErrInvalidAlias
 		}
 
@@ -80,13 +84,13 @@ func (ls *LinkService) CreateLink(ctx context.Context, originUrl string, customA
 
 	createdAt, err := ls.linkRepo.Create(ctx, originUrl, customAlias, nil, nil)
 	if err != nil {
-		return "", time.Time{}, nil
+		return "", time.Time{}, err
 	}
 
 	return customAlias, createdAt, nil
 }
 
-func (ls *LinkService) DeleteLink(ctx context.Context, targetAlias string) error {
+func (ls *Service) DeleteLink(ctx context.Context, targetAlias string) error {
 	isExists, err := ls.linkRepo.Exists(ctx, targetAlias)
 	if err != nil {
 		return err
@@ -103,7 +107,7 @@ func (ls *LinkService) DeleteLink(ctx context.Context, targetAlias string) error
 	return nil
 }
 
-func (ls *LinkService) Redirect(ctx context.Context, targetAlias string) (string, error) {
+func (ls *Service) Redirect(ctx context.Context, targetAlias string) (string, error) {
 	isExists, err := ls.linkRepo.Exists(ctx, targetAlias)
 	if err != nil {
 		return "", err
@@ -120,14 +124,21 @@ func (ls *LinkService) Redirect(ctx context.Context, targetAlias string) (string
 	return link.OriginalUrl, nil
 }
 
-func (h *LinkService) CreateClick(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
+func (h *Service) CreateClick(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
 	if !isAliasValid(shortCode) {
 		return ErrInvalidAlias
 	}
 	// TODO: проверка валидности ip
 
+	exists, err := h.linkRepo.Exists(ctx, shortCode)
+	if err != nil {
+		return err
+	} else if !exists {
+		return ErrNotFound
+	}
+
 	// TODO: перенести обработку userAgent, referrer сюда из слоя репозитория
-	err := h.clickRepo.Create(ctx, shortCode, ip, userAgent, referrer)
+	err = h.clickRepo.Create(ctx, shortCode, ip, userAgent, referrer)
 	if err != nil {
 		return err
 	}
@@ -135,23 +146,48 @@ func (h *LinkService) CreateClick(ctx context.Context, shortCode string, ip stri
 	return nil
 }
 
-func (h *LinkService) GetTotalClicks(ctx context.Context, shortCode string) (int64, error) {
+func (ls *Service) GetTotalClicks(ctx context.Context, shortCode string) (string, int64, time.Time, error) {
 	if !isAliasValid(shortCode) {
-		return 0, ErrInvalidAlias
-	}
-	totalClicks, err := h.clickRepo.GetTotalClicks(ctx, shortCode)
-	if err != nil {
-		return 0, err
+		return "", 0, time.Time{}, ErrInvalidAlias
 	}
 
-	return totalClicks, nil
+	isExists, err := ls.linkRepo.Exists(ctx, shortCode)
+	if err != nil {
+		return "", 0, time.Time{}, err
+	}
+	if !isExists {
+		return "", 0, time.Time{}, ErrNotFound
+	}
+
+	linkData, err := ls.linkRepo.Get(ctx, shortCode)
+	if err != nil {
+		return "", 0, time.Time{}, err
+	}
+	if linkData.CreatedAt == nil {
+		return "", 0, time.Time{}, errors.New("Link Data is invalid: linkData.CreatedAt is nil")
+	}
+
+	totalClicks, err := ls.clickRepo.GetTotalClicks(ctx, shortCode)
+	if err != nil {
+		return "", 0, time.Time{}, err
+	}
+
+	return linkData.OriginalUrl, totalClicks, *linkData.CreatedAt, nil
 }
 
-func (h *LinkService) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
+func (ls *Service) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
 	if !isAliasValid(shortCode) {
 		return nil, ErrInvalidAlias
 	}
-	totalClicks, err := h.clickRepo.GetDailyClicks(ctx, shortCode)
+	isExists, err := ls.linkRepo.Exists(ctx, shortCode)
+	if err != nil {
+		return nil, err
+	}
+	if !isExists {
+		return nil, ErrNotFound
+	}
+
+	totalClicks, err := ls.clickRepo.GetDailyClicks(ctx, shortCode)
 	if err != nil {
 		return nil, err
 	}
@@ -159,7 +195,10 @@ func (h *LinkService) GetDailyClicks(ctx context.Context, shortCode string) (*ma
 	return totalClicks, nil
 }
 
-func (h *LinkService) Stop() {}
+func (s *Service) Stop() {
+	s.linkRepo.Stop()
+	s.clickRepo.Stop()
+}
 
 func validateURL(rawURL string) error {
 	if rawURL == "" {

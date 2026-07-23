@@ -39,12 +39,6 @@ func (db *LinkRepository) WithTx(tx pgx.Tx) *LinkRepository {
 	return &dbCopy
 }
 
-func (db *LinkRepository) Stop() {
-	if db.pool != nil {
-		db.pool.Close()
-	}
-}
-
 func (db *LinkRepository) Exists(ctx context.Context, shortCode string) (bool, error) {
 	var isAlreadyExists int
 	err := db.conn.QueryRow(ctx, "SELECT COUNT(*) FROM short_links WHERE short_code=$1", shortCode).Scan(&isAlreadyExists)
@@ -95,4 +89,8 @@ func (db *LinkRepository) Delete(ctx context.Context, shortCode string) error {
 	}
 
 	return nil
+}
+
+func (r *LinkRepository) Stop() {
+	r.pool.Close()
 }

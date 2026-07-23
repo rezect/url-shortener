@@ -12,13 +12,13 @@ import (
 
 type ServiceTestSuite struct {
 	suite.Suite
-	ls *service.LinkService
+	ls *service.Service
 }
 
 func (suite *ServiceTestSuite) SetupSuite() {
 	mockLinkRepo := &testhelpers.MockLinkRepo{}
 	mockClickRepo := &testhelpers.MockClickRepo{}
-	suite.ls = service.NewLinkService(mockLinkRepo, mockClickRepo)
+	suite.ls = service.NewService(mockLinkRepo, mockClickRepo)
 }
 
 func (suite *ServiceTestSuite) TestCreateLink_OK() {
@@ -123,7 +123,7 @@ func (suite *ServiceTestSuite) TestCreateClick_OK() {
 }
 
 func (suite *ServiceTestSuite) TestGetTotalClicks_OK() {
-	_, err := suite.ls.GetTotalClicks(
+	_, _, _, err := suite.ls.GetTotalClicks(
 		context.Background(),
 		"exists",
 	)
