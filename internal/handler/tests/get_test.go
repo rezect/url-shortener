@@ -15,7 +15,7 @@ type GetTestSuite struct {
 }
 
 func (suite *GetTestSuite) SetupSuite() {
-	h := handler.NewHandler(&testhelpers.MockLinkService{}, BaseUrl)
+	h := handler.NewHandler(&testhelpers.MockService{}, &testhelpers.MockQueue{}, BaseUrl)
 	suite.mux = h.GetMux()
 }
 

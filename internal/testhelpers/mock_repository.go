@@ -53,6 +53,6 @@ func (r *MockClickRepo) GetDailyClicks(ctx context.Context, shortCode string) (*
 	return &report, nil
 }
 
-func (r *MockLinkRepo) Stop()
+func (r *MockLinkRepo) Stop() {}
 
-func (r *MockClickRepo) Stop()
+func (r *MockClickRepo) Stop() {}

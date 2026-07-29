@@ -25,8 +25,7 @@ type responseCreatedLink struct {
 }
 
 func (suite *PostTestSuite) SetupSuite() {
-	ls := &testhelpers.MockLinkService{}
-	suite.hs = handler.NewHandler(ls, BaseUrl)
+	suite.hs = handler.NewHandler(&testhelpers.MockService{}, &testhelpers.MockQueue{}, BaseUrl)
 }
 
 func (suite *PostTestSuite) TestCreateLink_OK() {

@@ -38,9 +38,9 @@ type Service interface {
 	Stop()
 }
 
-func NewHandler(ls Service, queue Queue, baseUrl string) *Handler {
+func NewHandler(s Service, queue Queue, baseUrl string) *Handler {
 	return &Handler{
-		Service: ls,
+		Service: s,
 		Queue:   queue,
 		BaseURL: baseUrl,
 	}
