@@ -25,12 +25,12 @@
 - [x] Эндпоинт статистики (`/api/v1/stats/{code}`)  
 - [x] Интеграционные тесты с `httptest` и `testcontainers`  
 - [x] Graceful shutdown с ожиданием завершения воркеров  
+- [x] Разворачивание с Kubernetes  
 
 ---
 
 ## Запланированные возможности (в процессе)
 
-- [ ] Разворачивание с Kubernetes  
 - [ ] Кеширование запросов (TTL Cache)  
 - [ ] Документация API (OpenAPI/Swagger)  
 
