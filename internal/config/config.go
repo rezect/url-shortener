@@ -8,8 +8,9 @@ import (
 )
 
 type Config struct {
-	Database DatabaseConfig `envPrefix:"DB_"`
-	Server   ServerConfig   `envPrefix:"SERVER_"`
+	Database  DatabaseConfig  `envPrefix:"DB_"`
+	Server    ServerConfig    `envPrefix:"SERVER_"`
+	Analytics AnalyticsConfig `envPrefix:"ANALYTICS_"`
 }
 
 type DatabaseConfig struct {
@@ -17,13 +18,19 @@ type DatabaseConfig struct {
 	Host     string `env:"HOST" envDefault:"localhost"`
 	Name     string `env:"NAME" envDefault:"postgres"`
 	User     string `env:"USER" envDefault:"postgres"`
-	Password string `env:"PASS" envDefault:"postgres"`
+	Password string `env:"PASSWORD" envDefault:"postgres"`
 	SSLMode  string `env:"SSL" envDefault:"disable"`
 }
 
 type ServerConfig struct {
 	BaseURL string `env:"BASE_URL" envDefault:"http://localhost:8000"`
-	Port string	`env:"PORT" envDefault:"8000"`
+	Port    string `env:"PORT" envDefault:"8000"`
+}
+
+type AnalyticsConfig struct {
+	Workers       int `env:"WORKERS" envDefault:"5"`
+	BatchSize     int `env:"BATCH_SIZE" envDefault:"100"`
+	FlushInterval int `env:"FLUSH_INTERVAL_SECS" envDefault:"5"`
 }
 
 func LoadConfig() (*Config, error) {

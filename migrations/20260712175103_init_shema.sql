@@ -14,7 +14,7 @@ CREATE TABLE
     short_code VARCHAR(20) NOT NULL,
     ip INET,
     user_agent TEXT,
-    referrer TEXT,
+    referer TEXT,
     clicked_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
   );
 
