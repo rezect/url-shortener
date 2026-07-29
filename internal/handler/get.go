@@ -85,3 +85,7 @@ func (h *Handler) HandlerGet_LinkStatistic(w http.ResponseWriter, r *http.Reques
 
 	response.WriteJSON(w, http.StatusOK, responseData)
 }
+
+func (h *Handler) HandlerGet_Health(w http.ResponseWriter, r *http.Request) {
+	response.WriteJSON(w, http.StatusOK, nil)
+}

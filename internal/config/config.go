@@ -18,7 +18,7 @@ type DatabaseConfig struct {
 	Host     string `env:"HOST" envDefault:"localhost"`
 	Name     string `env:"NAME" envDefault:"postgres"`
 	User     string `env:"USER" envDefault:"postgres"`
-	Password string `env:"PASS" envDefault:"postgres"`
+	Password string `env:"PASSWORD" envDefault:"postgres"`
 	SSLMode  string `env:"SSL" envDefault:"disable"`
 }
 

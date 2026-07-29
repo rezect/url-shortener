@@ -58,6 +58,7 @@ func (h *Handler) GetMux() http.Handler {
 	mux.HandleFunc("POST /api/v1/clicks", h.HandlerPost_CreateClick)
 	mux.HandleFunc("GET /s/{alias}", h.HandlerGet_Redirect)
 	mux.HandleFunc("GET /api/v1/stats/{short_code}", h.HandlerGet_LinkStatistic)
+	mux.HandleFunc("GET /health", h.HandlerGet_Health)
 
 	return mux
 }

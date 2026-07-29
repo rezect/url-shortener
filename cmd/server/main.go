@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"database/sql"
 	"errors"
 	"log"
 	"net/http"
@@ -11,12 +12,15 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pressly/goose/v3"
 	"github.com/rezect/url-shortener/internal/analytics"
 	"github.com/rezect/url-shortener/internal/config"
 	"github.com/rezect/url-shortener/internal/handler"
 	"github.com/rezect/url-shortener/internal/models"
 	"github.com/rezect/url-shortener/internal/repository"
 	"github.com/rezect/url-shortener/internal/service"
+
+	_ "github.com/lib/pq"
 )
 
 func main() {
@@ -24,6 +28,17 @@ func main() {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	db, err := sql.Open("postgres", cfg.DBString())
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := goose.Up(db, "migrations"); err != nil {
+		log.Fatalf("failed to apply migrations: %v", err)
+	}
+	db.Close()
+	log.Println("Migrations applied successfully")
 
 	dbPool, err := pgxpool.New(context.Background(), cfg.DBString())
 	if err != nil {
@@ -78,4 +93,3 @@ func main() {
 
 	log.Printf("Сервер успешно остановлен\n")
 }
-
