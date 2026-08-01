@@ -14,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pressly/goose/v3"
 	"github.com/rezect/url-shortener/internal/analytics"
+	"github.com/rezect/url-shortener/internal/cache"
 	"github.com/rezect/url-shortener/internal/config"
 	"github.com/rezect/url-shortener/internal/handler"
 	"github.com/rezect/url-shortener/internal/models"
@@ -57,8 +58,9 @@ func main() {
 		time.Duration(cfg.Analytics.FlushInterval)*time.Second,
 	)
 	queue.StartWorkers(cfg.Analytics.Workers)
+	cache := cache.NewCache()
 
-	linkService := service.NewService(linkRepo, clickRepo)
+	linkService := service.NewService(linkRepo, clickRepo, cache)
 
 	handler := handler.NewHandler(linkService, queue, cfg.Server.BaseURL)
 
