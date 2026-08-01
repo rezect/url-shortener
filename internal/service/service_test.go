@@ -32,18 +32,8 @@ func (suite *ServiceTestSuite) TestCreateLink_OK() {
 	suite.NoError(err)
 }
 
-func (suite *ServiceTestSuite) TestCreateLink_UrlWithoutHttps() {
-	originalURL := "github.com/rezect/url-shortener"
-	customAlias := "shortener"
-	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
-
-	suite.Equal("", alias)
-	suite.Equal(time.Time{}, createdAt)
-	suite.Equal(service.ErrInvalidURL, err)
-}
-
-func (suite *ServiceTestSuite) TestCreateLink_LinkWithoutDomain() {
-	originalURL := "https://github/rezect/url-shortener"
+func (suite *ServiceTestSuite) TestCreateLink_InvalidUrl() {
+	originalURL := "not a url lol"
 	customAlias := "shortener"
 	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
 
@@ -62,9 +52,29 @@ func (suite *ServiceTestSuite) TestCreateLink_InvalidAlias() {
 	suite.Equal(service.ErrInvalidAlias, err)
 }
 
-func (suite *ServiceTestSuite) TestCreateLink_AliasExists() {
+func (suite *ServiceTestSuite) TestCreateLink_AliasExistsInCache() {
 	originalURL := "https://github.com/rezect/url-shortener"
-	customAlias := "exists"
+	customAlias := "existsCache"
+	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
+
+	suite.Equal("", alias)
+	suite.Equal(time.Time{}, createdAt)
+	suite.Equal(service.ErrAliasExists, err)
+}
+
+func (suite *ServiceTestSuite) TestCreateLink_CustomAliasNotFound() {
+	originalURL := "https://github.com/rezect/url-shortener"
+	customAlias := "notExistsCache"
+	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
+
+	suite.NoError(err)
+	suite.Equal(customAlias, alias)
+	suite.NotEqual(time.Time{}, createdAt)
+}
+
+func (suite *ServiceTestSuite) TestCreateLink_AliasExistsOnlyInDatabase() {
+	originalURL := "https://github.com/rezect/url-shortener"
+	customAlias := "existsRepo"
 	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
 
 	suite.Equal("", alias)

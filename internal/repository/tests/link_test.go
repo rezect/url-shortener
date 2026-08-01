@@ -6,6 +6,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/rezect/url-shortener/internal/models"
 	"github.com/rezect/url-shortener/internal/repository"
 	"github.com/rezect/url-shortener/internal/testhelpers"
 	"github.com/stretchr/testify/require"
@@ -15,17 +16,19 @@ import (
 var (
 	originalURL = "https://github.com/rezect/url-shortener"
 	customAlias = "shortener"
+
+	randomAlias = "golang is cool"
 )
 
 type LinkRepoTestSuite struct {
 	suite.Suite
 	pgContainer *testhelpers.PostgresContainer
 
-	mainDB      *repository.LinkRepository
-	conn        *repository.LinkRepository
-	
-	tx          pgx.Tx
-	ctx         context.Context
+	mainDB *repository.LinkRepository
+	conn   *repository.LinkRepository
+
+	tx  pgx.Tx
+	ctx context.Context
 }
 
 func (suite *LinkRepoTestSuite) SetupSuite() {
@@ -89,15 +92,21 @@ func (suite *LinkRepoTestSuite) TestLink_DeleteLink() {
 	suite.NoError(err)
 
 	err = suite.conn.Delete(context.Background(), customAlias)
-	suite.NoError(err)
+	suite.Equal(repository.ErrNotFound, err)
 }
 
 func (suite *LinkRepoTestSuite) TestLink_Get() {
 	_, err := suite.conn.Create(context.Background(), originalURL, customAlias, nil, nil)
 	suite.NoError(err)
 
-	link, err := suite.conn.Get(context.Background(), customAlias)
+	link, isExists, err := suite.conn.Get(context.Background(), customAlias)
 	suite.NoError(err)
+	suite.Equal(true, isExists)
 	suite.Equal(originalURL, link.OriginalUrl)
 	suite.Equal(customAlias, link.ShortCode)
+
+	linkNotExists, isExists, err := suite.conn.Get(context.Background(), randomAlias)
+	suite.NoError(err)
+	suite.Equal(false, isExists)
+	suite.Equal((*models.ShortLink)(nil), linkNotExists)
 }
