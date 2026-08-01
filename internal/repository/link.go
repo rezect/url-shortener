@@ -12,7 +12,7 @@ import (
 )
 
 var (
-	ErrNoTransaction = errors.New("transaction is not set")
+	ErrNotFound = errors.New("link is not found")
 )
 
 type LinkRepository struct {
@@ -62,9 +62,13 @@ func (db *LinkRepository) Get(ctx context.Context, alias string) (*models.ShortL
 		&link.ExpiresAt,
 	)
 	if err != nil {
-		return nil, errors.Is(err, pgx.ErrNoRows), err
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, false, nil
+		} else {
+			return nil, false, err
+		}
 	}
-	return &link, errors.Is(err, pgx.ErrNoRows), nil
+	return &link, true, nil
 }
 
 func (db *LinkRepository) Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error) {
@@ -83,11 +87,13 @@ func (db *LinkRepository) Create(ctx context.Context, originalUrl string, shortC
 }
 
 func (db *LinkRepository) Delete(ctx context.Context, shortCode string) error {
-	_, err := db.conn.Exec(ctx, "DELETE FROM short_links WHERE short_code = $1", shortCode)
+	cmdTag, err := db.conn.Exec(ctx, "DELETE FROM short_links WHERE short_code = $1", shortCode)
 	if err != nil {
-		return fmt.Errorf("Error while deleting code \"%v\" from database: %v", shortCode, err)
+		return fmt.Errorf("error deleting code %q: %w", shortCode, err)
 	}
-
+	if cmdTag.RowsAffected() == 0 {
+		return ErrNotFound
+	}
 	return nil
 }
 
