@@ -52,7 +52,7 @@ func (db *LinkRepository) Exists(ctx context.Context, shortCode string) (bool, e
 	return false, nil
 }
 
-func (db *LinkRepository) Get(ctx context.Context, alias string) (*models.ShortLink, error) {
+func (db *LinkRepository) Get(ctx context.Context, alias string) (*models.ShortLink, bool, error) {
 	var link models.ShortLink
 	err := db.conn.QueryRow(ctx, "SELECT id, short_code, original_url, created_at, expires_at FROM short_links WHERE short_code=$1", alias).Scan(
 		&link.Id,
@@ -62,9 +62,9 @@ func (db *LinkRepository) Get(ctx context.Context, alias string) (*models.ShortL
 		&link.ExpiresAt,
 	)
 	if err != nil {
-		return nil, err
+		return nil, errors.Is(err, pgx.ErrNoRows), err
 	}
-	return &link, nil
+	return &link, errors.Is(err, pgx.ErrNoRows), nil
 }
 
 func (db *LinkRepository) Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error) {

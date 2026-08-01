@@ -18,7 +18,8 @@ type ServiceTestSuite struct {
 func (suite *ServiceTestSuite) SetupSuite() {
 	mockLinkRepo := &testhelpers.MockLinkRepo{}
 	mockClickRepo := &testhelpers.MockClickRepo{}
-	suite.ls = service.NewService(mockLinkRepo, mockClickRepo)
+	mockCache := &testhelpers.MockCache{}
+	suite.ls = service.NewService(mockLinkRepo, mockClickRepo, mockCache)
 }
 
 func (suite *ServiceTestSuite) TestCreateLink_OK() {
