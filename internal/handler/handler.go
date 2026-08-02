@@ -32,7 +32,7 @@ type Service interface {
 
 	GetTotalClicks(ctx context.Context, shortCode string) (string, int64, time.Time, error)
 
-	GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error)
+	GetDailyClicks(ctx context.Context, shortCode string) (*map[string]int, error)
 
 	Stop()
 }

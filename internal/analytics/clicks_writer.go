@@ -32,6 +32,7 @@ func (q *Queue) StartWorkers(n int) {
 		q.wg.Go(func() {
 			fmt.Printf("Starting worker %v...\n", i)
 			ticker := time.NewTicker(q.flushInterval)
+			defer ticker.Stop()
 			clicksArr := make([]models.Click, 0, q.batchSize)
 			for {
 				select {

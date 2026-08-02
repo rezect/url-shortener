@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"errors"
+	"net"
 	"net/http"
 	"time"
 
@@ -38,12 +39,11 @@ func (h *Handler) HandlerGet_Redirect(w http.ResponseWriter, r *http.Request) {
 
 	h.Queue.Push(models.Click{
 		ShortCode: alias,
-		Ip: "192.168.122.89",
+		Ip:        getIP(r),
 		UserAgent: userAgent,
-		Referer: referer,
+		Referer:   referer,
 	})
-	w.Header().Set("Location", originalURL)
-	response.WriteJSON(w, http.StatusFound, nil)
+	http.Redirect(w, r, originalURL, http.StatusFound)
 }
 
 type ResponseStatistic struct {
@@ -51,7 +51,7 @@ type ResponseStatistic struct {
 	OriginalUrl  string            `json:"original_url"`
 	CreatedAt    time.Time         `json:"created_at"`
 	TotalClicks  int64             `json:"total_clicks"`
-	ClicksPerDay map[time.Time]int `json:"clicks_per_day"`
+	ClicksPerDay map[string]int `json:"clicks_per_day"`
 }
 
 func (h *Handler) HandlerGet_LinkStatistic(w http.ResponseWriter, r *http.Request) {
@@ -75,12 +75,20 @@ func (h *Handler) HandlerGet_LinkStatistic(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	clicksPerDay, err := h.Service.GetDailyClicks(context.Background(), shortCode)
+	if err != nil {
+		response.WriteJSON(w, http.StatusInternalServerError, map[string]string{
+			"error": "internal error",
+		})
+		return
+	}
+
 	responseData := ResponseStatistic{
-		ShortCode: shortCode,
-		OriginalUrl: originalUrl,
-		CreatedAt: createdAt,
-		TotalClicks: totalLinkClicks,
-		ClicksPerDay: map[time.Time]int{},
+		ShortCode:    shortCode,
+		OriginalUrl:  originalUrl,
+		CreatedAt:    createdAt,
+		TotalClicks:  totalLinkClicks,
+		ClicksPerDay: *clicksPerDay,
 	}
 
 	response.WriteJSON(w, http.StatusOK, responseData)
@@ -88,4 +96,12 @@ func (h *Handler) HandlerGet_LinkStatistic(w http.ResponseWriter, r *http.Reques
 
 func (h *Handler) HandlerGet_Health(w http.ResponseWriter, r *http.Request) {
 	response.WriteJSON(w, http.StatusOK, nil)
+}
+
+func getIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
 }

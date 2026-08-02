@@ -19,7 +19,7 @@ services:
       DB_HOST: postgres
       DB_PORT: 5432
       DB_USER: postgres
-      DB_PASS: postgres
+      DB_PASSWORD: postgres
       DB_NAME: shortener
       SERVER_PORT: 8000
     container_name: backend
