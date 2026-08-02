@@ -25,7 +25,7 @@ func (suite *GetTestSuite) TestRedirect_OK() {
 	suite.mux.ServeHTTP(w, r)
 
 	suite.Equal(http.StatusFound, w.Code)
-	suite.Equal("original url", w.Header().Get("Location"))
+	suite.Equal("/s/original url", w.Header().Get("Location"))
 }
 
 func (suite *GetTestSuite) TestRedirect_AliasNotExists() {
