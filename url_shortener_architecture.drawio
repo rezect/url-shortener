@@ -1,0 +1,815 @@
+<mxfile host="Electron" agent="architecture-generator" pages="6">
+  <diagram name="Architecture Overview" id="page_41030">
+    <mxGraphModel dx="2289" dy="2591" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="ov_client" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="Client / Browser" vertex="1">
+          <mxGeometry height="60" width="200" x="760" y="-1120" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_main" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;arcSize=12;" value="main.go&#xa;bootstrap: LoadConfig, goose migrations,&#xa;wire deps, graceful shutdown" vertex="1">
+          <mxGeometry height="70" width="260" x="1100" y="-1000" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_config" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;arcSize=12;" value="config.Config&#xa;(env vars via caarlos0/env, .env)" vertex="1">
+          <mxGeometry height="60" width="260" x="1100" y="-830" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_ep1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="POST /api/v1/shorten" vertex="1">
+          <mxGeometry height="60" width="220" x="120" y="-710" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_ep2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="POST /api/v1/clicks" vertex="1">
+          <mxGeometry height="60" width="220" x="360" y="-710" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_ep3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="GET /s/{alias}" vertex="1">
+          <mxGeometry height="60" width="220" x="600" y="-710" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_ep4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="GET /api/v1/stats/{short_code}" vertex="1">
+          <mxGeometry height="60" width="260" x="840" y="-710" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_handler" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="Handler layer (internal/handler)&#xa;Handler{Service, Queue, BaseURL}&#xa;GetMux() -&gt; net/http ServeMux routes" vertex="1">
+          <mxGeometry height="90" width="500" x="380" y="-570" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_service" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;arcSize=12;" value="Service layer (internal/service)&#xa;CreateLink / DeleteLink / Redirect /&#xa;CreateClick / GetTotalClicks / GetDailyClicks&#xa;+ alias generation &amp; validation" vertex="1">
+          <mxGeometry height="110" width="500" x="380" y="-410" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_cache" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="Cache (interface)&#xa;Get/Set/Delete/Clear/Stop&#xa;(impl not shown in provided files)" vertex="1">
+          <mxGeometry height="80" width="220" x="120" y="-230" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_linkrepo" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="LinkRepository&#xa;(pgx pool, short_links table)" vertex="1">
+          <mxGeometry height="80" width="220" x="360" y="-230" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_clickrepo" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="ClickRepository&#xa;(pgx pool, clicks table)" vertex="1">
+          <mxGeometry height="80" width="220" x="730" y="-230" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_queue" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;arcSize=12;" value="analytics.Queue&#xa;buffered chan&lt;Click&gt; + N worker&#xa;goroutines, batch flush on size/ticker" vertex="1">
+          <mxGeometry height="80" width="260" x="1100" y="-230" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_db" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0b8fa3;fontSize=12;arcSize=8;" value="PostgreSQL&#xa;(tables: short_links, clicks)&#xa;migrations via pressly/goose" vertex="1">
+          <mxGeometry height="80" width="500" x="400" y="-70" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_client_ov_ep1_1" edge="1" parent="1" source="ov_client" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_ep1" value="HTTP">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_client_ov_ep2_2" edge="1" parent="1" source="ov_client" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_ep2" value="HTTP">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_client_ov_ep3_3" edge="1" parent="1" source="ov_client" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_ep3" value="HTTP">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_client_ov_ep4_4" edge="1" parent="1" source="ov_client" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_ep4" value="HTTP">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_ep1_ov_handler_5" edge="1" parent="1" source="ov_ep1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_handler" value="routes to">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="230" y="-610" />
+              <mxPoint x="630" y="-610" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_ov_ep2_ov_handler_6" edge="1" parent="1" source="ov_ep2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_handler" value="routes to">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_ep3_ov_handler_7" edge="1" parent="1" source="ov_ep3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_handler" value="routes to">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_ep4_ov_handler_8" edge="1" parent="1" source="ov_ep4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_handler" value="routes to">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_main_ov_config_9" edge="1" parent="1" source="ov_main" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_config" value="loads">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_main_ov_handler_10" edge="1" parent="1" source="ov_main" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;dashed=1;" target="ov_handler" value="wires (DI)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_main_ov_queue_11" edge="1" parent="1" source="ov_main" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;dashed=1;" target="ov_queue" value="starts workers">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1450" y="-965" />
+              <mxPoint x="1450" y="-190" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_ov_handler_ov_service_12" edge="1" parent="1" source="ov_handler" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_service" value="calls">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_handler_ov_queue_13" edge="1" parent="1" source="ov_handler" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;dashed=1;strokeColor=#9673a6;" target="ov_queue" value="Push(click) [fire-and-forget]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_service_ov_cache_14" edge="1" parent="1" source="ov_service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_cache" value="Get/Set/Delete">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_service_ov_linkrepo_15" edge="1" parent="1" source="ov_service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_linkrepo" value="Exists/Get/Create/Delete">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_service_ov_clickrepo_16" edge="1" parent="1" source="ov_service" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_clickrepo" value="GetTotalClicks/GetDailyClicks">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_queue_ov_clickrepo_17" edge="1" parent="1" source="ov_queue" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;dashed=1;strokeColor=#9673a6;" target="ov_clickrepo" value="BatchInsert [async]">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_linkrepo_ov_db_18" edge="1" parent="1" source="ov_linkrepo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_db" value="SQL (pgx)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_ov_clickrepo_ov_db_19" edge="1" parent="1" source="ov_clickrepo" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="ov_db" value="SQL (pgx)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="ov_note" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;" value="Notes:&#xa;- Two separate DB entry points exist: sql.Open(&quot;postgres&quot;,...) for goose migrations, and a&#xa;  pgxpool.Pool for all runtime queries (repositories) - two different drivers to the same DB.&#xa;- Click ingestion has two independent paths: synchronous (POST /api/v1/clicks -&gt; ClickRepository.Create)&#xa;  and asynchronous (GET /s/{alias} redirect -&gt; Queue.Push -&gt; batched -&gt; ClickRepository.BatchInsert)." vertex="1">
+          <mxGeometry height="110" width="780" x="120" y="50" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Request Path" id="page_51340">
+    <mxGraphModel dx="1471" dy="894" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="rp_g1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;verticalAlign=top;fontStyle=1;fontSize=13;dashed=1;" value="Flow A: Create Short Link (POST /api/v1/shorten)" vertex="1">
+          <mxGeometry height="820" width="720" x="20" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_a1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="Client sends&lt;br&gt;POST /api/v1/shorten&lt;div&gt;{url, custom_alias}&lt;/div&gt;" vertex="1">
+          <mxGeometry height="60" width="200" x="90" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_a2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="HandlerPost_CreateLink&#xa;decode JSON body" vertex="1">
+          <mxGeometry height="70" width="260" x="60" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_a3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="body valid &amp; url != &quot;&quot; ?" vertex="1">
+          <mxGeometry height="90" width="260" x="60" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_a3e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="400 Bad Request" vertex="1">
+          <mxGeometry height="80" width="200" x="420" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_a4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;arcSize=12;" value="Service.CreateLink(url, alias)&#xa;(see CreateLink flowchart page)" vertex="1">
+          <mxGeometry height="70" width="260" x="60" y="390" as="geometry" />
+        </mxCell>
+        <mxCell id="o-vb7yI04WjjM8nbuPnm-1" edge="1" parent="1" source="rp_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;" target="rp_a7">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="o-vb7yI04WjjM8nbuPnm-2" connectable="0" parent="o-vb7yI04WjjM8nbuPnm-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="nil" vertex="1">
+          <mxGeometry relative="1" x="0.1917" as="geometry">
+            <mxPoint y="-16" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="7im5iEY-jvYkCnayvwo4-1" edge="1" parent="1" source="rp_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="-LdBZszNUkIiyFA-BoI0-1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="B0k8cdb2jDAZpwrQE-qG-1" connectable="0" parent="7im5iEY-jvYkCnayvwo4-1" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;b&gt;ErrAliasExists&lt;/b&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.0524" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="B0k8cdb2jDAZpwrQE-qG-3" edge="1" parent="1" source="rp_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="B0k8cdb2jDAZpwrQE-qG-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="zMaIv6jumblufIDBRKDL-1" connectable="0" parent="B0k8cdb2jDAZpwrQE-qG-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ErrInvalidAlias /&lt;div&gt;ErrInvalidURL&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="0.3524" y="2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="zMaIv6jumblufIDBRKDL-3" edge="1" parent="1" source="rp_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;" target="zMaIv6jumblufIDBRKDL-2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="zMaIv6jumblufIDBRKDL-4" connectable="0" parent="zMaIv6jumblufIDBRKDL-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="Внутренняя ошибка" vertex="1">
+          <mxGeometry relative="1" x="0.1985" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="zMaIv6jumblufIDBRKDL-6" connectable="0" parent="zMaIv6jumblufIDBRKDL-3" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="!= nil" vertex="1">
+          <mxGeometry relative="1" x="-0.744" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rp_a5" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="" vertex="1">
+          <mxGeometry height="90" width="260" x="60" y="520" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_a7" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="201 Created&#xa;{short_url, original_url, created_at}" vertex="1">
+          <mxGeometry height="70" width="260" x="60" y="720" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_a1_rp_a2_1" edge="1" parent="1" source="rp_a1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_a2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_a2_rp_a3_2" edge="1" parent="1" source="rp_a2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_a3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_a3_rp_a3e_3" edge="1" parent="1" source="rp_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_a3e" value="invalid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_a3_rp_a4_4" edge="1" parent="1" source="rp_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_a4" value="valid">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_a4_rp_a5_5" edge="1" parent="1" source="rp_a4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_a5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_g2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=none;strokeColor=#999999;verticalAlign=top;fontStyle=1;fontSize=13;dashed=1;" value="Flow B: Redirect (GET /s/{alias})" vertex="1">
+          <mxGeometry height="1010" width="760" x="800" y="20" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="Client sends&#xa;GET /s/{alias}" vertex="1">
+          <mxGeometry height="60" width="220" x="860" y="60" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="HandlerGet_Redirect&#xa;extract alias, headers" vertex="1">
+          <mxGeometry height="70" width="260" x="840" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="alias empty?" vertex="1">
+          <mxGeometry height="80" width="260" x="840" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b3e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="400 Bad Request" vertex="1">
+          <mxGeometry height="70" width="200" x="1190" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;arcSize=12;" value="Service.Redirect(alias)&#xa;(see Redirect flowchart page)" vertex="1">
+          <mxGeometry height="70" width="260" x="840" y="360" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b5" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="Cache.Get / Cache.Set&#xa;(inside Service.Redirect)" vertex="1">
+          <mxGeometry height="70" width="260" x="840" y="460" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="LinkRepository.Exists / Get&#xa;(on cache miss)" vertex="1">
+          <mxGeometry height="70" width="260" x="840" y="560" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b7" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="err / not found?" vertex="1">
+          <mxGeometry height="90" width="260" x="840" y="660" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b7e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="404 Not Found /&#xa;500 Internal Server Error" vertex="1">
+          <mxGeometry height="80" width="220" x="1180" y="665" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b8" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=12;arcSize=12;" value="Queue.Push(Click{...})&#xa;[fire-and-forget, unbuffered risk]" vertex="1">
+          <mxGeometry height="70" width="260" x="840" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b9" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="302 Found&#xa;Location: original_url" vertex="1">
+          <mxGeometry height="70" width="260" x="840" y="890" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b10" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;arcSize=12;" value="Analytics Queue worker&#xa;batches &amp; flushes async" vertex="1">
+          <mxGeometry height="70" width="260" x="1160" y="790" as="geometry" />
+        </mxCell>
+        <mxCell id="rp_b11" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0b8fa3;fontSize=12;arcSize=8;" value="ClickRepository.BatchInsert&#xa;-&gt; PostgreSQL" vertex="1">
+          <mxGeometry height="70" width="260" x="1160" y="900" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b1_rp_b2_9" edge="1" parent="1" source="rp_b1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b2_rp_b3_10" edge="1" parent="1" source="rp_b2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b3_rp_b3e_11" edge="1" parent="1" source="rp_b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b3e" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b3_rp_b4_12" edge="1" parent="1" source="rp_b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b4" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b4_rp_b5_13" edge="1" parent="1" source="rp_b4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b5" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b5_rp_b6_14" edge="1" parent="1" source="rp_b5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b6" value="on cache miss">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b6_rp_b7_15" edge="1" parent="1" source="rp_b6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b7" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b7_rp_b7e_16" edge="1" parent="1" source="rp_b7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b7e" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b7_rp_b8_17" edge="1" parent="1" source="rp_b7" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b8" value="false (found)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b8_rp_b9_18" edge="1" parent="1" source="rp_b8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rp_b9" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b8_rp_b10_19" edge="1" parent="1" source="rp_b8" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;dashed=1;strokeColor=#9673a6;" target="rp_b10" value="async">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rp_b10_rp_b11_20" edge="1" parent="1" source="rp_b10" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;dashed=1;strokeColor=#9673a6;" target="rp_b11" value="async batch">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7jZ7zOVbsgnVHLx_wmXa-3" edge="1" parent="1" source="7jZ7zOVbsgnVHLx_wmXa-1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.16;exitY=0.55;exitDx=0;exitDy=0;exitPerimeter=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="rp_a1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="7jZ7zOVbsgnVHLx_wmXa-1" parent="1" style="ellipse;shape=cloud;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;gradientColor=#b3b3b3;" value="url: string, origin url&lt;div&gt;&lt;br&gt;&lt;div&gt;custom_alias: string,&lt;/div&gt;&lt;div&gt;short code&lt;/div&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="135" width="200" x="420" y="50" as="geometry" />
+        </mxCell>
+        <mxCell id="-LdBZszNUkIiyFA-BoI0-1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="409 Conflict" vertex="1">
+          <mxGeometry height="80" width="200" x="480" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="B0k8cdb2jDAZpwrQE-qG-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="400 Bad Request" vertex="1">
+          <mxGeometry height="80" width="200" x="530" y="525" as="geometry" />
+        </mxCell>
+        <mxCell id="zMaIv6jumblufIDBRKDL-2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="400 Bad Request" vertex="1">
+          <mxGeometry height="80" width="200" x="480" y="640" as="geometry" />
+        </mxCell>
+        <mxCell id="zMaIv6jumblufIDBRKDL-5" parent="1" style="text;html=1;whiteSpace=wrap;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;rounded=0;" value="&lt;div&gt;Какую ошибку получили&lt;/div&gt;&lt;div&gt;из CreateLink?&lt;/div&gt;&lt;div style=&quot;padding-top: 4px;&quot;&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;err&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="210" x="85" y="535" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Flow - CreateLink" id="page_68849">
+    <mxGraphModel dx="2812" dy="736" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="cl_start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="CreateLink(originUrl, customAlias)" vertex="1">
+          <mxGeometry height="70" width="260" x="-270" y="410" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_dec_url" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="validateURL(originUrl)" vertex="1">
+          <mxGeometry height="100" width="260" x="-270" y="530" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_err_url" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, ErrInvalidURL" vertex="1">
+          <mxGeometry height="80" width="220" x="100" y="540" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_dec_url_cl_err_url_1" edge="1" parent="1" source="cl_dec_url" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_err_url" value="true (invalid)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_dec_hasalias" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="customAlias != &quot;&quot; ?" vertex="1">
+          <mxGeometry height="100" width="260" x="-270" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_dec_url_cl_dec_hasalias_2" edge="1" parent="1" source="cl_dec_url" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_dec_hasalias" value="false (valid)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-4" edge="1" parent="1" source="cl_a1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="cl_a2">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-5" connectable="0" parent="xU9vqVkZrkoFLwkztt_R-4" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="true (valid)" vertex="1">
+          <mxGeometry relative="1" x="-0.272" y="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cl_a1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Валидный ли Alias?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;isAliasValid(customAlias)" vertex="1">
+          <mxGeometry height="120" width="300" x="-850" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_dec_hasalias_cl_a1_3" edge="1" parent="1" source="cl_dec_hasalias" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=13;endArrow=block;" target="cl_a1" value="true (задан customAlias)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a1e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, ErrInvalidAlias" vertex="1">
+          <mxGeometry height="70" width="260" x="-430" y="835" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a1_cl_a1e_4" edge="1" parent="1" source="cl_a1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a1e" value="false (invalid&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212)); color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;)&lt;/span&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cl_a2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;&lt;div&gt;Проверяем наличие в кеше&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;/div&gt;isAliasExistsCache(customAlias)&lt;br&gt;-&amp;gt; cache.Get(customAlias)" vertex="1">
+          <mxGeometry height="80" width="260" x="-830" y="980" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="cache result?" vertex="1">
+          <mxGeometry height="110" width="260" x="-830" y="1110" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a2_cl_a3_6" edge="1" parent="1" source="cl_a2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a3_hit_err" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, ErrAliasExists" vertex="1">
+          <mxGeometry height="80" width="260" x="-430" y="1125" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a3_cl_a3_hit_err_7" edge="1" parent="1" source="cl_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a3_hit_err" value="CacheHit&lt;div&gt;(Ссылка занята)&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Проверяем наличие в БД&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Exists(customAlias)" vertex="1">
+          <mxGeometry height="80" width="260" x="-830" y="1300" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a3_cl_a4_8" edge="1" parent="1" source="cl_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a4" value="CacheMiss&lt;div&gt;(В кеше нет информации)&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a4e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, err" vertex="1">
+          <mxGeometry height="70" width="260" x="-420" y="1305" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a4_cl_a4e_9" edge="1" parent="1" source="cl_a4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a4e" value="&lt;div&gt;Ошибка при запросе&lt;/div&gt;err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a5" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;&lt;font&gt;Существует ли ссылка в БД?&lt;/font&gt;&lt;/div&gt;&lt;font&gt;isExists == true?&lt;/font&gt;" vertex="1">
+          <mxGeometry height="110" width="260" x="-830" y="1460" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a4_cl_a5_10" edge="1" parent="1" source="cl_a4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a5" value="&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212)); color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;Ошибки нет&lt;/span&gt;&lt;div&gt;&lt;div&gt;err == nil&lt;/div&gt;&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a5e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="cache.Set(alias,url,TTL)&lt;div&gt;&lt;br&gt;return &quot;&quot;, ErrAliasExists&lt;/div&gt;" vertex="1">
+          <mxGeometry height="90" width="260" x="-430" y="1470" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a5_cl_a5e_11" edge="1" parent="1" source="cl_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a5e" value="true (exists)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_a_join" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;fillColor=#fffae6;" value="ErrNotFound (cached &quot;not exists&quot;)&#xa;falls through here too - skips&#xa;repo.Exists check entirely (see cl_a3)" vertex="1">
+          <mxGeometry height="90" width="260" x="-830" y="1670" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a3_cl_a_join_12" edge="1" parent="1" source="cl_a3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a_join" value="ErrNotFound&lt;div&gt;(Ссылки не существует)&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="-960" y="1165" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e_cl_a5_cl_a_join_13" edge="1" parent="1" source="cl_a5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_a_join" value="false (not exists)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_b1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;arcSize=12;" value="&lt;div&gt;Генерируем alias&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;generateAlias()&lt;br&gt;-&amp;gt; customAlias  [LOOP START]" vertex="1">
+          <mxGeometry height="80" width="260" x="290" y="810" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_dec_hasalias_cl_b1_14" edge="1" parent="1" source="cl_dec_hasalias" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=13;endArrow=block;" target="cl_b1" value="false (НЕ задан customAlias)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_b2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Проверяем наличие в кеше&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;isAliasExistsCache(customAlias)&lt;br&gt;-&amp;gt; cache.Get(customAlias)" vertex="1">
+          <mxGeometry height="80" width="260" x="290" y="950" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b1_cl_b2_15" edge="1" parent="1" source="cl_b1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-11" edge="1" parent="1" source="cl_b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#ffcd28;gradientColor=#ffa500;strokeColor=#d79b00;" target="cl_b1">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="200" y="1135" />
+              <mxPoint x="200" y="850" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-12" connectable="0" parent="xU9vqVkZrkoFLwkztt_R-11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;CacheHit&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;(Ссылка занята)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.1545" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-15" edge="1" parent="1" source="cl_b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="cl_b_join">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1030" y="1135" />
+              <mxPoint x="1030" y="1715" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-16" connectable="0" parent="xU9vqVkZrkoFLwkztt_R-15" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ErrNotFound: break&lt;div&gt;(Ссылка свободна)&lt;/div&gt;" vertex="1">
+          <mxGeometry relative="1" x="-0.0869" y="-2" as="geometry">
+            <mxPoint x="-388" y="-255" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cl_b3" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="cache result?" vertex="1">
+          <mxGeometry height="110" width="260" x="290" y="1080" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b2_cl_b3_16" edge="1" parent="1" source="cl_b2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b3" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_b4" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;&lt;div&gt;Проверяем наличие в БД&lt;/div&gt;&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Exists(customAlias)&lt;br&gt;[only on CacheMiss]" vertex="1">
+          <mxGeometry height="80" width="260" x="290" y="1285" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b3_cl_b4_18" edge="1" parent="1" source="cl_b3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b4" value="CacheMiss&lt;div&gt;(В кеше нет информации)&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_b4e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, err" vertex="1">
+          <mxGeometry height="70" width="260" x="710" y="1290" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b4_cl_b4e_19" edge="1" parent="1" source="cl_b4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b4e" value="&lt;div&gt;Ошибка при запросе&lt;/div&gt;err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_b5" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Существует?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;isExists?" vertex="1">
+          <mxGeometry height="100" width="260" x="290" y="1430" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b4_cl_b5_20" edge="1" parent="1" source="cl_b4" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b5" value="err == nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-13" edge="1" parent="1" source="cl_b6" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=0;exitDx=0;exitDy=0;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fillColor=#ffcd28;gradientColor=#ffa500;strokeColor=#d79b00;" target="cl_b1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-14" connectable="0" parent="xU9vqVkZrkoFLwkztt_R-13" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="loopback" vertex="1">
+          <mxGeometry relative="1" x="-0.3062" y="-2" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="cl_b6" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Записываем в кеш что такая ссылка есть.&lt;/div&gt;&lt;div&gt;Повторяем цикл&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;cache.Set(alias, url, TTL)&lt;br&gt;[mark as taken]  retry -&amp;gt; loop" vertex="1">
+          <mxGeometry height="90" width="260" x="-100" y="1435" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b5_cl_b6_21" edge="1" parent="1" source="cl_b5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b6" value="true (exists)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="xU9vqVkZrkoFLwkztt_R-17" edge="1" parent="1" source="cl_b_join" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="cl_m1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_b_join" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;fillColor=#fffae6;" value="break loop&#xa;(alias confirmed free)" vertex="1">
+          <mxGeometry height="50" width="120" x="360" y="1690" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_b5_cl_b_join_23" edge="1" parent="1" source="cl_b5" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_b_join" value="false (free)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_m1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Создаём ссылку в БД&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Create(originUrl, customAlias,&lt;br&gt;nil, nil)" vertex="1">
+          <mxGeometry height="80" width="260" x="-270" y="1800" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_a_join_cl_m1_25" edge="1" parent="1" source="cl_a_join" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_m1" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_m2" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="err != nil ?" vertex="1">
+          <mxGeometry height="90" width="260" x="-270" y="1930" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_m1_cl_m2_27" edge="1" parent="1" source="cl_m1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_m2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_m2e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, time.Time{}, err" vertex="1">
+          <mxGeometry height="70" width="220" x="110" y="1940" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_m2_cl_m2e_28" edge="1" parent="1" source="cl_m2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_m2e" value="true">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_m3" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Записываем в кеш, что ссылка занята&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;cache.Set(customAlias, originUrl, TTL)" vertex="1">
+          <mxGeometry height="70" width="260" x="-270" y="2070" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_m2_cl_m3_29" edge="1" parent="1" source="cl_m2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_m3" value="false">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="cl_end" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="return customAlias, createdAt, nil" vertex="1">
+          <mxGeometry height="70" width="260" x="-270" y="2190" as="geometry" />
+        </mxCell>
+        <mxCell id="e_cl_m3_cl_end_30" edge="1" parent="1" source="cl_m3" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="cl_end" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Flow - Redirect" id="page_63445">
+    <mxGraphModel dx="1717" dy="1043" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="rd_start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="Redirect(targetAlias)" vertex="1">
+          <mxGeometry height="60" width="300" x="640" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="7HVX3l7zGxgzyTBWYcCP-1" edge="1" parent="1" source="rd_cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="rd_dec1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_cache" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Сначала проверяем в кеше&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;cache.Get(targetAlias)" vertex="1">
+          <mxGeometry height="70" width="300" x="640" y="150" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_dec1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="cache result?" vertex="1">
+          <mxGeometry height="120" width="300" x="640" y="270" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_hit" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="return originUrl.(string), nil&#xa;(CacheHit)" vertex="1">
+          <mxGeometry height="70" width="260" x="1040" y="250" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_dec1_rd_hit_1" edge="1" parent="1" source="rd_dec1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_hit" value="CacheHit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_nf1" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, ErrNotFound&#xa;(cached negative)" vertex="1">
+          <mxGeometry height="70" width="260" x="1040" y="340" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_dec1_rd_nf1_2" edge="1" parent="1" source="rd_dec1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_nf1" value="ErrNotFound">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_repo1" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Проверяем наличие в БД&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Exists(targetAlias)" vertex="1">
+          <mxGeometry height="80" width="300" x="640" y="440" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_dec1_rd_repo1_3" edge="1" parent="1" source="rd_dec1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_repo1" value="CacheMiss (else)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_repo1e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, err" vertex="1">
+          <mxGeometry height="70" width="260" x="1040" y="445" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_repo1_rd_repo1e_4" edge="1" parent="1" source="rd_repo1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_repo1e" value="err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_dec2" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Существует?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;isExists == true?" vertex="1">
+          <mxGeometry height="100" width="300" x="640" y="570" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_repo1_rd_dec2_5" edge="1" parent="1" source="rd_repo1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_dec2" value="err == nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_neg_cache" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Кешируем отсутствие ссылки&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;&lt;span style=&quot;background-color: transparent; color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;cache.Set(targetAlias, nil, TTL)&lt;/span&gt;&lt;/div&gt;" vertex="1">
+          <mxGeometry height="80" width="300" x="640" y="730" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_dec2_rd_neg_cache_6" edge="1" parent="1" source="rd_dec2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_neg_cache" value="false (not exists)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_nf2" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, ErrNotFound" vertex="1">
+          <mxGeometry height="60" width="300" x="1030" y="740" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_neg_cache_rd_nf2_7" edge="1" parent="1" source="rd_neg_cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_nf2" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_repo2" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Получаем данные из БД&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Get(targetAlias)" vertex="1">
+          <mxGeometry height="70" width="300" x="640" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_dec2_rd_repo2_8" edge="1" parent="1" source="rd_dec2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_repo2" value="true (exists)">
+          <mxGeometry relative="1" x="0.0022" as="geometry">
+            <mxPoint as="offset" />
+            <Array as="points">
+              <mxPoint x="550" y="620" />
+              <mxPoint x="550" y="885" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="rd_repo2e" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return &quot;&quot;, err" vertex="1">
+          <mxGeometry height="70" width="260" x="1050" y="850" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_repo2_rd_repo2e_9" edge="1" parent="1" source="rd_repo2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_repo2e" value="err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_setcache" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Кешируем результат&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;cache.Set(targetAlias, link.OriginalUrl, TTL)" vertex="1">
+          <mxGeometry height="80" width="300" x="640" y="1000" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_repo2_rd_setcache_10" edge="1" parent="1" source="rd_repo2" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_setcache" value="err == nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_end" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="return link.OriginalUrl, nil" vertex="1">
+          <mxGeometry height="70" width="300" x="640" y="1110" as="geometry" />
+        </mxCell>
+        <mxCell id="e_rd_setcache_rd_end_11" edge="1" parent="1" source="rd_setcache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="rd_end" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="rd_note" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;" value="Note: three-way branch on cache.Get() result (CacheHit / ErrNotFound / CacheMiss=else) mirrors&#xa;service.isAliasExistsCache pattern used elsewhere. The &#39;else&#39; branch is reached whenever err is&#xa;neither CacheHit nor ErrNotFound, i.e. treated implicitly as CacheMiss without an explicit check." vertex="1">
+          <mxGeometry height="80" width="510" x="30" y="80" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Flow - DeleteLink" id="page_80452">
+    <mxGraphModel dx="1212" dy="736" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="dl_start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="DeleteLink(targetAlias)" vertex="1">
+          <mxGeometry height="60" width="300" x="470" y="80" as="geometry" />
+        </mxCell>
+        <mxCell id="Oe6FxDd6LS23HBpv3M-8-1" edge="1" parent="1" source="dl_cache" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="dl_dec1">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_cache" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Проверяем наличие в кеше&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;isAliasExistsCache(targetAlias)&lt;br&gt;-&amp;gt; cache.Get(targetAlias)" vertex="1">
+          <mxGeometry height="80" width="300" x="470" y="190" as="geometry" />
+        </mxCell>
+        <mxCell id="kMo6HbV6VGz-pu2am_8q-2" edge="1" parent="1" source="dl_dec1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;" target="dl_nf_path">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="kMo6HbV6VGz-pu2am_8q-5" connectable="0" parent="kMo6HbV6VGz-pu2am_8q-2" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="ErrNotFound" vertex="1">
+          <mxGeometry relative="1" x="-0.2084" y="1" as="geometry">
+            <mxPoint x="-3" y="-1" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dl_dec1" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="cache result?" vertex="1">
+          <mxGeometry height="130" width="300" x="470" y="320" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_hit_del" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Удаляем из БД&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Delete(targetAlias)" vertex="1">
+          <mxGeometry height="80" width="300" x="870" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_dec1_dl_hit_del_1" edge="1" parent="1" source="dl_dec1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_hit_del" value="CacheHit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_hit_err" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return err" vertex="1">
+          <mxGeometry height="70" width="260" x="890" y="210" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_hit_del_dl_hit_err_2" edge="1" parent="1" source="dl_hit_del" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_hit_err" value="err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_hit_cachedel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Удаляем из кеша&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;cache.Delete(targetAlias)" vertex="1">
+          <mxGeometry height="70" width="300" x="1250" y="350" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_hit_del_dl_hit_cachedel_3" edge="1" parent="1" source="dl_hit_del" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_hit_cachedel" value="err == nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_hit_end" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="return nil" vertex="1">
+          <mxGeometry height="60" width="300" x="1250" y="215" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_hit_cachedel_dl_hit_end_4" edge="1" parent="1" source="dl_hit_cachedel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_hit_end" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_exists" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Проверяем наличие в БД&lt;/div&gt;&lt;br&gt;linkRepo.Exists(targetAlias)" vertex="1">
+          <mxGeometry height="80" width="300" x="470" y="510" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_dec1_dl_miss_exists_5" edge="1" parent="1" source="dl_dec1" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_exists" value="CacheMiss">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_err" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return err" vertex="1">
+          <mxGeometry height="70" width="260" x="890" y="515" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_exists_dl_miss_err_6" edge="1" parent="1" source="dl_miss_exists" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_err" value="err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_dec" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Существует?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;isExists ?" vertex="1">
+          <mxGeometry height="100" width="300" x="470" y="670" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_exists_dl_miss_dec_7" edge="1" parent="1" source="dl_miss_exists" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_dec" value="err == nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_nf" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return ErrNotFound" vertex="1">
+          <mxGeometry height="70" width="260" x="890" y="685" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_dec_dl_miss_nf_8" edge="1" parent="1" source="dl_miss_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_nf" value="false (not exists)">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="dl_miss_del" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=12;arcSize=12;" value="&lt;div&gt;Удаляем из БД&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;linkRepo.Delete(targetAlias)" vertex="1">
+          <mxGeometry height="70" width="300" x="470" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_dec_dl_miss_del_9" edge="1" parent="1" source="dl_miss_dec" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_del" value="true ()">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_delerr" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="return err" vertex="1">
+          <mxGeometry height="70" width="260" x="870" y="820" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_del_dl_miss_delerr_10" edge="1" parent="1" source="dl_miss_del" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_delerr" value="err != nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_cachedel" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=12;arcSize=12;" value="&lt;div&gt;Записываем отрицательный результат в кеш&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;cache.Set(alias, nil, TTL)" vertex="1">
+          <mxGeometry height="70" width="300" x="470" y="940" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_del_dl_miss_cachedel_11" edge="1" parent="1" source="dl_miss_del" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_cachedel" value="err == nil">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_miss_end" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;fontStyle=1;" value="return nil" vertex="1">
+          <mxGeometry height="60" width="300" x="850" y="945" as="geometry" />
+        </mxCell>
+        <mxCell id="e_dl_miss_cachedel_dl_miss_end_12" edge="1" parent="1" source="dl_miss_cachedel" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="dl_miss_end" value="">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_nf_path" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f8cecc;strokeColor=#b85450;fontSize=12;fontStyle=1;" value="ErrNotFound path (cached negative):&#xa;return ErrNotFound" vertex="1">
+          <mxGeometry height="80" width="300" x="50" y="345" as="geometry" />
+        </mxCell>
+        <mxCell id="dl_note" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;" value="Note: final &#39;return nil&#39; at the bottom of DeleteLink is dead code - every branch above already&#xa;returns explicitly (all three cache-result branches cover CacheHit/CacheMiss/ErrNotFound)." vertex="1">
+          <mxGeometry height="70" width="900" x="50" y="1050" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+  <diagram name="Flow - Analytics Queue Worker" id="page_66031">
+    <mxGraphModel dx="1471" dy="894" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1600" pageHeight="1200" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-11" edge="1" parent="1" source="aq_select" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0;exitY=0.5;exitDx=0;exitDy=0;entryX=0.5;entryY=0;entryDx=0;entryDy=0;" target="aq_flush_full">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-12" connectable="0" parent="iLF1Jtw8W_2yZTIBvxjY-11" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="&lt;div&gt;Пришел сигнал от таймера&lt;/div&gt;case &amp;lt;-ticker.C" vertex="1">
+          <mxGeometry relative="1" x="0.2331" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aq_start" parent="1" style="ellipse;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#666666;fontSize=12;fontStyle=1;" value="Worker goroutine #i starts&#xa;(StartWorkers spawns N of these)" vertex="1">
+          <mxGeometry height="70" width="340" x="620" y="40" as="geometry" />
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-15" edge="1" parent="1" source="aq_buf" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;">
+          <mxGeometry relative="1" as="geometry">
+            <mxPoint x="789.8571428571429" y="260" as="targetPoint" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aq_buf" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=12;arcSize=12;" value="local buffer clicksArr := []&#xa;ticker := NewTicker(flushInterval)" vertex="1">
+          <mxGeometry height="70" width="340" x="620" y="160" as="geometry" />
+        </mxCell>
+        <mxCell id="aq_recv" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Открыть ли канал?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;click, ok := &amp;lt;-ch&lt;br&gt;ok == true ?" vertex="1">
+          <mxGeometry height="115" width="340" x="620" y="435" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aq_select_aq_recv_1" edge="1" parent="1" source="aq_select" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="aq_recv" value="&lt;div&gt;Пришел сигнал от канала&lt;/div&gt;case &amp;lt;-ch">
+          <mxGeometry relative="1" x="-0.0769" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aq_dec_full" parent="1" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Буффер переполнен?&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;len(buffer) &amp;lt; batchSize ?" vertex="1">
+          <mxGeometry height="100" width="340" x="620" y="680" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aq_recv_aq_dec_full_2" edge="1" parent="1" source="aq_recv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="aq_dec_full" value="true (open)&lt;div&gt;Канал открыт&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-8" edge="1" parent="1" source="aq_append" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=1;exitY=0.5;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fillColor=#e6d0de;gradientColor=#d5739d;strokeColor=#996185;" target="aq_select">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1440" y="730" />
+              <mxPoint x="1440" y="315" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aq_append" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=12;arcSize=12;" value="append(buffer, click)" vertex="1">
+          <mxGeometry height="70" width="340" x="1070" y="695" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aq_dec_full_aq_append_3" edge="1" parent="1" source="aq_dec_full" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="aq_append" value="true (room left)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-9" edge="1" parent="1" source="aq_flush_full" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;exitX=0.5;exitY=1;exitDx=0;exitDy=0;entryX=1;entryY=0.5;entryDx=0;entryDy=0;fillColor=#e6d0de;gradientColor=#d5739d;strokeColor=#996185;" target="aq_select">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="800" />
+              <mxPoint x="1440" y="800" />
+              <mxPoint x="1440" y="315" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-16" connectable="0" parent="iLF1Jtw8W_2yZTIBvxjY-9" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="loopback" vertex="1">
+          <mxGeometry relative="1" x="-0.9555" y="1" as="geometry">
+            <mxPoint x="48" as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-17" connectable="0" parent="iLF1Jtw8W_2yZTIBvxjY-9" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];" value="loopback" vertex="1">
+          <mxGeometry relative="1" x="0.2043" y="-1" as="geometry">
+            <mxPoint as="offset" />
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="aq_flush_full" parent="1" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#b0e3e6;strokeColor=#0b8fa3;fontSize=12;arcSize=8;" value="&lt;div&gt;Batch Insert в БД, сброс буффера&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;ClickRepository.BatchInsert(buffer)&lt;div&gt;reset buffer = []&lt;/div&gt;&lt;div&gt;&lt;br&gt;&lt;/div&gt;&lt;div&gt;Даже при пустом буффере!&lt;/div&gt;" vertex="1">
+          <mxGeometry height="110" width="340" x="130" y="675" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aq_dec_full_aq_flush_full_5" edge="1" parent="1" source="aq_dec_full" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="aq_flush_full" value="false (переполнен)">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aq_closed" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;fillColor=#fffae6;" value="channel closed (ok == false):&#xa;flush remaining buffer if any,&#xa;then RETURN (goroutine exits)" vertex="1">
+          <mxGeometry height="60" width="180" x="1200" y="470" as="geometry" />
+        </mxCell>
+        <mxCell id="e_aq_recv_aq_closed_7" edge="1" parent="1" source="aq_recv" style="edgeStyle=orthogonalEdgeStyle;rounded=0;html=1;jettySize=auto;orthogonalLoop=1;fontSize=11;endArrow=block;" target="aq_closed" value="&lt;div&gt;&lt;span style=&quot;background-color: light-dark(#ffffff, var(--ge-dark-color, #121212)); color: light-dark(rgb(0, 0, 0), rgb(255, 255, 255));&quot;&gt;false (closed)&lt;/span&gt;&lt;/div&gt;&lt;div&gt;&lt;div&gt;Канал закрыт (остановка программы)&lt;/div&gt;&lt;/div&gt;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="aq_note" parent="1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;fontSize=11;dashed=1;align=left;verticalAlign=top;spacing=6;" value="Notes:&#xa;- BatchInsert is called on every ticker tick regardless of whether the buffer has entries,&#xa;  and BatchInsert(nil/empty) does short-circuit (len(clicks)==0 -&gt; return nil), so this is safe&#xa;  but still a wasted call+slice reset each interval.&#xa;- Errors from BatchInsert are only fmt.Printf&#39;d - never retried, never surfaced -&gt; silent data loss." vertex="1">
+          <mxGeometry height="110" width="900" x="80" y="940" as="geometry" />
+        </mxCell>
+        <mxCell id="iLF1Jtw8W_2yZTIBvxjY-14" connectable="0" parent="1" style="group" value="" vertex="1">
+          <mxGeometry height="115" width="340" x="620" y="255" as="geometry" />
+        </mxCell>
+        <mxCell id="aq_select" parent="iLF1Jtw8W_2yZTIBvxjY-14" style="rhombus;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#333333;fontSize=12;" value="&lt;div&gt;Слушаем канал или ticker&lt;/div&gt;select {} on: channel receive / ticker tick" vertex="1">
+          <mxGeometry height="110" width="340" y="5" as="geometry" />
+        </mxCell>
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
