@@ -1,157 +1,172 @@
-# URL Shortener (в разработке)
+# URL Shortener на Go
 
-> **Статус:** проект активно разрабатывается. Реализована базовая функциональность, ведётся работа над аналитикой, кэшированием и тестами.
+Сервис для создания коротких ссылок с асинхронным сбором аналитики переходов (IP, User-Agent, Referer, время). Построен на слоистой архитектуре (handler → service → repository) с in-memory кэшем и очередью на каналах для батчевой записи кликов в БД.
 
----
+## Стек и продемонстрированные технологии
 
-## Описание проекта
+- **Go 1.26**, стандартная библиотека `net/http` — маршрутизация через `http.ServeMux` с новым синтаксисом (`"GET /s/{alias}"`), без внешних роутеров.
+- **PostgreSQL** + **pgx/v5** (`pgxpool`) — пул соединений, `pgx.Batch` для батчевой вставки кликов, транзакции (`Begin`/`WithTx`) для изоляции тестов.
+- **goose** — SQL-миграции, применяются автоматически при старте (`goose.Up`), а в тестах — через `embed.FS`.
+- **Конкурентность**: пул воркеров на буферизированном канале (`chan models.Click`), периодический флаш по таймеру или по размеру батча, `sync.WaitGroup` (`wg.Go`) для graceful-остановки воркеров.
+- **Graceful shutdown** — обработка `SIGINT`/`SIGTERM`, поочерёдная остановка HTTP-сервера, очереди аналитики и пула БД.
+- **Собственный in-memory TTL-кэш** — паттерн cache-aside с положительным и отрицательным кэшированием (несуществующие алиасы).
+- **Конфигурация** — `caarlos0/env` + `godotenv`, вложенные структуры с `envPrefix`.
+- **Тестирование**:
+  - юнит-тесты сервисного слоя на моках (`testify/suite` + собственные mock-реализации интерфейсов);
+  - интеграционные тесты репозитория на реальном PostgreSQL через `testcontainers-go`, с откатом каждого теста в транзакции;
+  - HTTP-тесты хендлеров через `httptest` с моками сервиса и очереди.
+- **Middleware** — логирование запросов (метод, путь, IP, длительность).
+- **Docker** — multi-stage `Dockerfile`, `docker-compose.yaml` (приложение + Postgres).
+- **Kubernetes** — манифесты `Deployment`/`Service`/`Ingress`/`ConfigMap`/`PVC` для приложения и БД, liveness/readiness пробы на `/health`.
+- Разделение через **интерфейсы** (`Cache`, `LinkRepository`, `ClickRepository`, `Service`, `Queue`) — слои не зависят от конкретных реализаций, что упрощает мокирование.
 
-**URL Shortener** — это сервис для сокращения длинных ссылок с возможностью сбора статистики переходов. Проект написан на Go с использованием стандартной библиотеки для HTTP, PostgreSQL в качестве хранилища и собственного in‑memory кэша для ускорения редиректов.
+## Архитектура
 
-Основная цель — показать навыки проектирования REST API, работы с БД, асинхронной обработки данных (очередь + воркеры) и graceful shutdown.
-
----
-
-## Реализованные возможности
-
-- [x] Создание коротких ссылок с автоматической генерацией или пользовательским алиасом  
-- [x] Валидация URL и алиасов  
-- [x] Проверка уникальности алиаса  
-- [x] Миграции базы данных (через `goose`)  
-- [x] Конфигурация через переменные окружения (поддержка `.env`)  
-- [x] Docker Compose для локального запуска PostgreSQL  
-- [x] Редирект по короткой ссылке (`/s/{code}`) 
-- [x] Асинхронная запись кликов через очередь и воркеры  
-- [x] Эндпоинт статистики (`/api/v1/stats/{code}`)  
-- [x] Интеграционные тесты с `httptest` и `testcontainers`  
-- [x] Graceful shutdown с ожиданием завершения воркеров  
-- [x] Разворачивание с Kubernetes  
-- [x] Кеширование запросов (TTL Cache)  
-
----
-
-## Запланированные возможности (в процессе)
-
-- [ ] Документация API (OpenAPI/Swagger)
-- [ ] Документация функций
-- [ ] Доделать README
-- [ ] Оформить архитектуру
----
-
-## Технологии
-
-- **Go** 1.23+  
-- **PostgreSQL** 16  
-- **pgx** — драйвер и пул соединений  
-- **goose** — миграции  
-- **Docker** + **Docker Compose**  
-- Стандартная библиотека для HTTP (без сторонних фреймворков)  
-
----
-
-## Установка и запуск
-
-### 1. Клонирование репозитория
-
-```bash
-git clone https://github.com/yourusername/url-shortener.git
-cd url-shortener
+```
+cmd/server/main.go        — инициализация зависимостей, миграции, graceful shutdown
+internal/
+  handler/                — HTTP-хендлеры, парсинг запросов, маппинг ошибок в статус-коды
+  service/                — бизнес-логика: валидация, генерация алиасов, работа с кэшем
+  repository/             — доступ к БД (short_links, clicks) через pgx
+  cache/                  — обёртка над in-memory TTL-кэшем
+  analytics/              — очередь на канале + воркеры для батчевой записи кликов
+  middleware/             — логирующий middleware
+  config/                 — загрузка конфигурации из env/.env
+  models/                 — доменные модели (ShortLink, Click)
+  response/               — хелпер для JSON-ответов
+  testhelpers/            — моки и поднятие тестового Postgres-контейнера
+migrations/               — SQL-миграции (goose), embed для тестов
 ```
 
-### 2. Переменные окружения
+Поток запроса на редирект:
 
-Создайте файл `.env` в корне проекта (пример):
+1. `GET /s/{alias}` → кэш (`cache.Get`).
+2. Cache hit → мгновенный редирект + событие в очередь аналитики.
+3. Cache miss → запрос в БД, при находке — заполнение кэша и редирект; при отсутствии — кэширование отрицательного результата и `404`.
+4. Событие клика уходит в буферизированный канал, воркеры пакетно (по размеру или по таймеру) пишут его в БД через `pgx.Batch`.
 
-```env
-# База данных
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=shortener
-DB_USER=postgres
-DB_PASS=postgres
-DB_SSL=disable
+## API
 
-# Сервер
-SERVER_BASE_URL=http://localhost:8000
-SERVER_PORT=8000
+### Создать короткую ссылку
+
 ```
+POST /api/v1/shorten
+Content-Type: application/json
 
-### 3. Запуск базы данных через Docker Compose
-
-```bash
-docker-compose up -d
-```
-
-### 4. Применение миграций
-
-Установите `goose` (или используйте готовый бинарник):
-
-```bash
-go install github.com/pressly/goose/v3/cmd/goose@latest
-```
-
-Примените миграции:
-
-```bash
-goose -dir migrations postgres "postgresql://postgres:postgres@localhost:5432/shortener?sslmode=disable" up
-```
-
-### 5. Запуск приложения
-
-```bash
-go run cmd/server/main.go
-```
-
-Сервер запустится на порту, указанном в `SERVER_PORT` (по умолчанию 8000).
-
----
-
-## API эндпоинты (текущая версия)
-
-### POST /api/v1/shorten
-
-Создание короткой ссылки.
-
-**Тело запроса (JSON):**
-
-```json
 {
   "url": "https://example.com/very/long/url",
-  "custom_alias": "mycool"   // необязательно
+  "custom_alias": "mycool"   // опционально, [a-zA-Z0-9_-], 6–20 символов
 }
 ```
 
-**Успешный ответ (201 Created):**
-
+**201 Created**
 ```json
 {
   "short_url": "http://localhost:8000/s/mycool",
   "original_url": "https://example.com/very/long/url",
-  "created_at": "2025-07-27T12:00:00Z"
+  "created_at": "2025-01-01T12:00:00Z"
 }
 ```
 
-**Возможные ошибки:**
+- `400 Bad Request` — невалидный URL или алиас.
+- `409 Conflict` — алиас уже занят.
 
-- `400 Bad Request` — невалидный URL или алиас  
-- `409 Conflict` — алиас уже занят  
-
----
-
-## Структура проекта (основные пакеты)
+### Перейти по короткой ссылке
 
 ```
-cmd/
-  server/            # точка входа
-internal/
-  config/            # загрузка конфигурации
-  handler/           # HTTP-обработчики
-  models/            # структуры данных
-  repository/        # работа с БД
-  response/          # хелперы для JSON-ответов
-  service/           # бизнес-логика
-migrations/          # SQL-миграции
-docker-compose.yaml
+GET /s/{alias}
 ```
 
----
+- `302 Found` с заголовком `Location: <original_url>`.
+- `404 Not Found` — алиас не найден.
+
+### Получить статистику
+
+```
+GET /api/v1/stats/{short_code}
+```
+
+**200 OK**
+```json
+{
+  "short_code": "abc123",
+  "original_url": "https://example.com/very/long/url",
+  "created_at": "2025-01-01T12:00:00Z",
+  "total_clicks": 1234,
+  "clicks_per_day": {
+    "2025-01-01": 100,
+    "2025-01-02": 200
+  }
+}
+```
+
+### Health-check
+
+```
+GET /health
+```
+
+## Запуск
+
+### Через Docker Compose
+
+```bash
+docker-compose up --build
+```
+
+Приложение поднимется на `http://localhost:6767`, PostgreSQL — на порту `5432`. Миграции применяются автоматически при старте.
+
+### Локально
+
+Требуется запущенный PostgreSQL и `.env`-файл (или переменные окружения) со следующими настройками:
+
+| Переменная                    | По умолчанию            | Описание                          |
+|--------------------------------|--------------------------|------------------------------------|
+| `DB_HOST`                      | `localhost`              | Хост БД                            |
+| `DB_PORT`                      | `5432`                   | Порт БД                            |
+| `DB_NAME`                      | `postgres`                | Имя базы                           |
+| `DB_USER`                      | `postgres`                | Пользователь БД                    |
+| `DB_PASSWORD`                  | `postgres`                | Пароль БД                          |
+| `DB_SSL`                       | `disable`                 | Режим SSL                          |
+| `SERVER_PORT`                  | `8000`                    | Порт HTTP-сервера                  |
+| `SERVER_BASE_URL`              | `http://localhost:8000`   | Базовый URL для формирования коротких ссылок |
+| `ANALYTICS_WORKERS`            | `5`                       | Количество воркеров аналитики      |
+| `ANALYTICS_BATCH_SIZE`         | `100`                     | Размер батча для вставки кликов    |
+| `ANALYTICS_FLUSH_INTERVAL_SECS`| `5`                       | Интервал принудительного флаша, сек|
+
+```bash
+go run ./cmd/server
+```
+
+### Kubernetes
+
+В корне лежат манифесты (`backend-deployment.yaml`, `backend-service.yaml`, `backend-ingress.yaml`, `backend-config.yaml`, `postgres-deployment.yaml`, `postgres-service.yaml`, `postgres-pvc.yaml`) для развёртывания приложения и БД в кластере. Приложение ожидает `postgres-secret` с ключами `user`/`password`.
+
+```bash
+kubectl apply -f postgres-pvc.yaml -f postgres-deployment.yaml -f postgres-service.yaml
+kubectl apply -f backend-config.yaml -f backend-deployment.yaml -f backend-service.yaml -f backend-ingress.yaml
+```
+
+## Тесты
+
+```bash
+go test ./...
+```
+
+- `internal/service` — юнит-тесты на моках репозиториев и кэша.
+- `internal/handler` — тесты HTTP-слоя на моках сервиса и очереди (`httptest`).
+- `internal/repository` — интеграционные тесты на реальном PostgreSQL, поднимаемом через `testcontainers-go`; каждый тест выполняется в отдельной транзакции с откатом.
+
+Для интеграционных тестов репозитория нужен доступный Docker (testcontainers поднимает контейнер `postgres:16-alpine` автоматически).
+
+## Пример использования
+
+```bash
+curl -X POST http://localhost:8000/api/v1/shorten \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://github.com/rezect/url-shortener"}'
+
+curl -i http://localhost:8000/s/<short_code>
+
+curl http://localhost:8000/api/v1/stats/<short_code>
+```
