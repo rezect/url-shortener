@@ -10,6 +10,11 @@ import (
 	"github.com/stretchr/testify/suite"
 )
 
+var (
+	originUrlTest = "http://github.com/rezect"
+	customAliasTest = "rezect"
+)
+
 type ServiceTestSuite struct {
 	suite.Suite
 	ls *service.Service
@@ -18,31 +23,20 @@ type ServiceTestSuite struct {
 func (suite *ServiceTestSuite) SetupSuite() {
 	mockLinkRepo := &testhelpers.MockLinkRepo{}
 	mockClickRepo := &testhelpers.MockClickRepo{}
-	suite.ls = service.NewService(mockLinkRepo, mockClickRepo)
+	mockCache := &testhelpers.MockCache{}
+	suite.ls = service.NewService(mockLinkRepo, mockClickRepo, mockCache)
 }
 
 func (suite *ServiceTestSuite) TestCreateLink_OK() {
-	originalURL := "https://github.com/rezect/url-shortener"
-	customAlias := "shortener"
-	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
+	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originUrlTest, customAliasTest)
 
-	suite.Equal(customAlias, alias)
+	suite.Equal(customAliasTest, alias)
 	suite.NotEqual(time.Time{}, createdAt)
 	suite.NoError(err)
 }
 
-func (suite *ServiceTestSuite) TestCreateLink_UrlWithoutHttps() {
-	originalURL := "github.com/rezect/url-shortener"
-	customAlias := "shortener"
-	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
-
-	suite.Equal("", alias)
-	suite.Equal(time.Time{}, createdAt)
-	suite.Equal(service.ErrInvalidURL, err)
-}
-
-func (suite *ServiceTestSuite) TestCreateLink_LinkWithoutDomain() {
-	originalURL := "https://github/rezect/url-shortener"
+func (suite *ServiceTestSuite) TestCreateLink_InvalidUrl() {
+	originalURL := "not a url lol"
 	customAlias := "shortener"
 	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
 
@@ -61,9 +55,29 @@ func (suite *ServiceTestSuite) TestCreateLink_InvalidAlias() {
 	suite.Equal(service.ErrInvalidAlias, err)
 }
 
-func (suite *ServiceTestSuite) TestCreateLink_AliasExists() {
+func (suite *ServiceTestSuite) TestCreateLink_AliasExistsInCache() {
 	originalURL := "https://github.com/rezect/url-shortener"
-	customAlias := "exists"
+	customAlias := "existsCache"
+	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
+
+	suite.Equal("", alias)
+	suite.Equal(time.Time{}, createdAt)
+	suite.Equal(service.ErrAliasExists, err)
+}
+
+func (suite *ServiceTestSuite) TestCreateLink_CustomAliasNotFound() {
+	originalURL := "https://github.com/rezect/url-shortener"
+	customAlias := "notExistsCache"
+	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
+
+	suite.NoError(err)
+	suite.Equal(customAlias, alias)
+	suite.NotEqual(time.Time{}, createdAt)
+}
+
+func (suite *ServiceTestSuite) TestCreateLink_AliasExistsOnlyInDatabase() {
+	originalURL := "https://github.com/rezect/url-shortener"
+	customAlias := "existsRepo"
 	alias, createdAt, err := suite.ls.CreateLink(context.Background(), originalURL, customAlias)
 
 	suite.Equal("", alias)
@@ -81,59 +95,102 @@ func (suite *ServiceTestSuite) TestCreateLink_WithoutAlias() {
 	suite.NoError(err)
 }
 
-func (suite *ServiceTestSuite) TestDeleteLink_OK() {
-	customAlias := "exists"
+func (suite *ServiceTestSuite) TestDeleteLink_ExistsCache() {
+	customAlias := "existsCache"
 	err := suite.ls.DeleteLink(context.Background(), customAlias)
 
 	suite.NoError(err)
 }
 
-func (suite *ServiceTestSuite) TestDeleteLink_LinkDoesNotExist() {
-	customAlias := "does not exist"
+func (suite *ServiceTestSuite) TestDeleteLink_ExistsDatabase() {
+	customAlias := "existsRepo"
+	err := suite.ls.DeleteLink(context.Background(), customAlias)
+
+	suite.NoError(err)
+}
+
+func (suite *ServiceTestSuite) TestDeleteLink_NotExistsCache() {
+	customAlias := "notExistsCache"
 	err := suite.ls.DeleteLink(context.Background(), customAlias)
 
 	suite.Equal(service.ErrNotFound, err)
 }
 
-func (suite *ServiceTestSuite) TestRedirect_OK() {
-	customAlias := "exists"
+func (suite *ServiceTestSuite) TestDeleteLink_NotExists() {
+	customAlias := "bibolibo"
+	err := suite.ls.DeleteLink(context.Background(), customAlias)
+
+	suite.Equal(service.ErrNotFound, err)
+}
+
+func (suite *ServiceTestSuite) TestRedirect_ExistsCache() {
+	customAlias := "existsCache"
 	originUrl, err := suite.ls.Redirect(context.Background(), customAlias)
 
 	suite.NoError(err)
 	suite.Equal("http://github.com/rezect", originUrl)
 }
 
-func (suite *ServiceTestSuite) TestRedirect_LinkDoesNotExist() {
-	customAlias := "does not exist"
+func (suite *ServiceTestSuite) TestRedirect_NotExistsCache() {
+	customAlias := "notExistsCache"
 	originUrl, err := suite.ls.Redirect(context.Background(), customAlias)
 
 	suite.Equal(service.ErrNotFound, err)
 	suite.Equal("", originUrl)
 }
 
-func (suite *ServiceTestSuite) TestCreateClick_OK() {
-	err := suite.ls.CreateClick(
-		context.Background(),
-		"exists",
-		"000.000.000.000",
-		nil,
-		nil,
-	)
-	suite.NoError(err)
+func (suite *ServiceTestSuite) TestRedirect_NotExists() {
+	customAlias := "doesNotExists"
+	originUrl, err := suite.ls.Redirect(context.Background(), customAlias)
+
+	suite.Equal(service.ErrNotFound, err)
+	suite.Equal("", originUrl)
 }
 
-func (suite *ServiceTestSuite) TestGetTotalClicks_OK() {
-	_, _, _, err := suite.ls.GetTotalClicks(
-		context.Background(),
-		"exists",
-	)
+func (suite *ServiceTestSuite) TestRedirect_ExistsInDatabase() {
+	customAlias := "existsRepo"
+	originUrl, err := suite.ls.Redirect(context.Background(), customAlias)
+
 	suite.NoError(err)
+	suite.Equal("http://github.com/rezect", originUrl)
 }
 
-func (suite *ServiceTestSuite) TestGetDailyClicks_OK() {
+func (suite *ServiceTestSuite) TestGetTotalClicks_ExistsCache() {
+	originUrl, totalClicks, createdAt, err := suite.ls.GetTotalClicks(
+		context.Background(),
+		"existsCache",
+	)
+
+	suite.NoError(err)
+	suite.Equal(originUrlTest, originUrl)
+	suite.Equal((int64)(0), totalClicks)
+	suite.NotEqual(time.Time{}, createdAt)
+}
+
+func (suite *ServiceTestSuite) TestGetTotalClicks_ExistsDatabase() {
+	originUrl, totalClicks, createdAt, err := suite.ls.GetTotalClicks(
+		context.Background(),
+		"existsRepo",
+	)
+	
+	suite.NoError(err)
+	suite.Equal(originUrlTest, originUrl)
+	suite.Equal((int64)(0), totalClicks)
+	suite.NotEqual(time.Time{}, createdAt)
+}
+
+func (suite *ServiceTestSuite) TestGetDailyClicks_ExistsCache() {
 	_, err := suite.ls.GetDailyClicks(
 		context.Background(),
-		"exists",
+		"existsCache",
+	)
+	suite.NoError(err)
+}
+
+func (suite *ServiceTestSuite) TestGetDailyClicks_ExistsDatabase() {
+	_, err := suite.ls.GetDailyClicks(
+		context.Background(),
+		"existsRepo",
 	)
 	suite.NoError(err)
 }

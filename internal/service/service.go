@@ -9,27 +9,40 @@ import (
 	"strings"
 	"time"
 
+	"github.com/rezect/url-shortener/internal/cache"
 	"github.com/rezect/url-shortener/internal/models"
 )
 
+type Cache interface {
+	Get(key string) (string, error)
+
+	Set(key string, value any, ttl time.Duration) error
+
+	Delete(key string) error
+
+	Clear()
+
+	Stop()
+}
+
 type LinkRepository interface {
-	Exists(ctx context.Context, shortCode string) (bool, error)
+	Exists(ctx context.Context, alias string) (bool, error)
 
-	Get(ctx context.Context, alias string) (*models.ShortLink, error)
+	Get(ctx context.Context, alias string) (*models.ShortLink, bool, error)
 
-	Create(ctx context.Context, originalUrl string, shortCode string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error)
+	Create(ctx context.Context, originalUrl string, alias string, createdAt *time.Time, expiresAt *time.Time) (time.Time, error)
 
-	Delete(ctx context.Context, shortCode string) error
+	Delete(ctx context.Context, alias string) error
 
 	Stop()
 }
 
 type ClickRepository interface {
-	Create(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error
+	Create(ctx context.Context, alias string, ip string, userAgent, referrer *string) error
 
-	GetTotalClicks(ctx context.Context, shortCode string) (int64, error)
+	GetTotalClicks(ctx context.Context, alias string) (int64, error)
 
-	GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error)
+	GetDailyClicks(ctx context.Context, alias string) (*map[time.Time]int, error)
 
 	Stop()
 }
@@ -39,21 +52,25 @@ var (
 	ErrInvalidAlias = errors.New("invalid alias")
 	ErrAliasExists  = errors.New("alias already taken")
 	ErrNotFound     = errors.New("link not found")
+
+	TTL = 60 * time.Second
 )
 
 type Service struct {
 	linkRepo  LinkRepository
 	clickRepo ClickRepository
+	cache     Cache
 }
 
-func NewService(linkRepo LinkRepository, clickRepo ClickRepository) *Service {
+func NewService(linkRepo LinkRepository, clickRepo ClickRepository, cache Cache) *Service {
 	return &Service{
 		linkRepo:  linkRepo,
 		clickRepo: clickRepo,
+		cache:     cache,
 	}
 }
 
-func (ls *Service) CreateLink(ctx context.Context, originUrl string, customAlias string) (string, time.Time, error) {
+func (svc *Service) CreateLink(ctx context.Context, originUrl string, customAlias string) (string, time.Time, error) {
 	if err := validateURL(originUrl); err != nil {
 		return "", time.Time{}, ErrInvalidURL
 	}
@@ -62,112 +79,130 @@ func (ls *Service) CreateLink(ctx context.Context, originUrl string, customAlias
 			return "", time.Time{}, ErrInvalidAlias
 		}
 
-		isExists, err := ls.linkRepo.Exists(ctx, customAlias)
-		if err != nil {
-			return "", time.Time{}, err
-		}
-		if isExists {
+		_, err := svc.cache.Get(customAlias)
+		if errors.Is(err, cache.CacheHit) {
 			return "", time.Time{}, ErrAliasExists
+		} else if errors.Is(err, cache.CacheMiss) {
+			isExists, err := svc.linkRepo.Exists(ctx, customAlias)
+			if err != nil {
+				return "", time.Time{}, err
+			}
+			if isExists {
+				svc.cache.Set(customAlias, originUrl, TTL)
+				return "", time.Time{}, ErrAliasExists
+			}
 		}
 	} else {
 		for {
 			customAlias = generateAlias()
-			isExists, err := ls.linkRepo.Exists(ctx, customAlias)
+
+			_, err := svc.cache.Get(customAlias)
+			if errors.Is(err, cache.CacheHit) {
+				continue
+			} else if errors.Is(err, cache.NotExists) {
+				break
+			}
+
+			isExists, err := svc.linkRepo.Exists(ctx, customAlias)
 			if err != nil {
 				return "", time.Time{}, err
 			}
 			if !isExists {
 				break
+			} else {
+				svc.cache.Set(customAlias, originUrl, TTL)
 			}
 		}
 	}
 
-	createdAt, err := ls.linkRepo.Create(ctx, originUrl, customAlias, nil, nil)
+	createdAt, err := svc.linkRepo.Create(ctx, originUrl, customAlias, nil, nil)
 	if err != nil {
 		return "", time.Time{}, err
 	}
+	svc.cache.Set(customAlias, originUrl, TTL)
 
 	return customAlias, createdAt, nil
 }
 
-func (ls *Service) DeleteLink(ctx context.Context, targetAlias string) error {
-	isExists, err := ls.linkRepo.Exists(ctx, targetAlias)
-	if err != nil {
-		return err
-	}
-	if !isExists {
+func (svc *Service) DeleteLink(ctx context.Context, targetAlias string) error {
+	_, err := svc.cache.Get(targetAlias)
+	if errors.Is(err, cache.CacheHit) {
+		err = svc.linkRepo.Delete(ctx, targetAlias)
+		if err != nil {
+			return err
+		}
+		svc.cache.Delete(targetAlias)
+		return nil
+	} else if errors.Is(err, cache.CacheMiss) {
+		isExists, err := svc.linkRepo.Exists(ctx, targetAlias)
+		if err != nil {
+			return err
+		}
+		if !isExists {
+			return ErrNotFound
+		} else {
+			err = svc.linkRepo.Delete(ctx, targetAlias)
+			if err != nil {
+				return err
+			}
+			svc.cache.Delete(targetAlias)
+			return nil
+		}
+	} else if errors.Is(err, cache.NotExists) {
 		return ErrNotFound
-	}
-
-	err = ls.linkRepo.Delete(ctx, targetAlias)
-	if err != nil {
-		return err
 	}
 
 	return nil
 }
 
-func (ls *Service) Redirect(ctx context.Context, targetAlias string) (string, error) {
-	isExists, err := ls.linkRepo.Exists(ctx, targetAlias)
+func (svc *Service) Redirect(ctx context.Context, targetAlias string) (string, error) {
+	if !isAliasValid(targetAlias) {
+		return "", ErrInvalidAlias
+	}
+
+	originUrl, err := svc.cache.Get(targetAlias)
+	if errors.Is(err, cache.CacheHit) {
+		return originUrl, nil
+	} else if errors.Is(err, cache.NotExists) {
+		return "", ErrNotFound
+	}
+
+	link, isExists, err := svc.linkRepo.Get(ctx, targetAlias)
 	if err != nil {
 		return "", err
 	}
 	if !isExists {
+		svc.cache.Set(targetAlias, nil, TTL)
 		return "", ErrNotFound
 	}
-
-	link, err := ls.linkRepo.Get(ctx, targetAlias)
-	if err != nil {
-		return "", err
+	if link == nil {
+		return "", errors.New("trying to get nil value. link is nil!")
 	}
+	svc.cache.Set(targetAlias, link.OriginalUrl, TTL)
 
 	return link.OriginalUrl, nil
 }
 
-func (h *Service) CreateClick(ctx context.Context, shortCode string, ip string, userAgent, referrer *string) error {
-	if !isAliasValid(shortCode) {
-		return ErrInvalidAlias
-	}
-	// TODO: проверка валидности ip
-
-	exists, err := h.linkRepo.Exists(ctx, shortCode)
-	if err != nil {
-		return err
-	} else if !exists {
-		return ErrNotFound
-	}
-
-	// TODO: перенести обработку userAgent, referrer сюда из слоя репозитория
-	err = h.clickRepo.Create(ctx, shortCode, ip, userAgent, referrer)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (ls *Service) GetTotalClicks(ctx context.Context, shortCode string) (string, int64, time.Time, error) {
-	if !isAliasValid(shortCode) {
+func (svc *Service) GetTotalClicks(ctx context.Context, alias string) (string, int64, time.Time, error) {
+	if !isAliasValid(alias) {
 		return "", 0, time.Time{}, ErrInvalidAlias
 	}
 
-	isExists, err := ls.linkRepo.Exists(ctx, shortCode)
+	linkData, isExists, err := svc.linkRepo.Get(ctx, alias)
 	if err != nil {
 		return "", 0, time.Time{}, err
 	}
 	if !isExists {
 		return "", 0, time.Time{}, ErrNotFound
 	}
-
-	linkData, err := ls.linkRepo.Get(ctx, shortCode)
-	if err != nil {
-		return "", 0, time.Time{}, err
+	if linkData == nil {
+		return "", 0, time.Time{}, errors.New("trying to get nil value. link is nil!")
 	}
 	if linkData.CreatedAt == nil {
 		return "", 0, time.Time{}, errors.New("Link Data is invalid: linkData.CreatedAt is nil")
 	}
 
-	totalClicks, err := ls.clickRepo.GetTotalClicks(ctx, shortCode)
+	totalClicks, err := svc.clickRepo.GetTotalClicks(ctx, alias)
 	if err != nil {
 		return "", 0, time.Time{}, err
 	}
@@ -175,11 +210,11 @@ func (ls *Service) GetTotalClicks(ctx context.Context, shortCode string) (string
 	return linkData.OriginalUrl, totalClicks, *linkData.CreatedAt, nil
 }
 
-func (ls *Service) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
-	if !isAliasValid(shortCode) {
+func (svc *Service) GetDailyClicks(ctx context.Context, alias string) (*map[time.Time]int, error) {
+	if !isAliasValid(alias) {
 		return nil, ErrInvalidAlias
 	}
-	isExists, err := ls.linkRepo.Exists(ctx, shortCode)
+	isExists, err := svc.linkRepo.Exists(ctx, alias)
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +222,7 @@ func (ls *Service) GetDailyClicks(ctx context.Context, shortCode string) (*map[t
 		return nil, ErrNotFound
 	}
 
-	totalClicks, err := ls.clickRepo.GetDailyClicks(ctx, shortCode)
+	totalClicks, err := svc.clickRepo.GetDailyClicks(ctx, alias)
 	if err != nil {
 		return nil, err
 	}
@@ -195,9 +230,9 @@ func (ls *Service) GetDailyClicks(ctx context.Context, shortCode string) (*map[t
 	return totalClicks, nil
 }
 
-func (s *Service) Stop() {
-	s.linkRepo.Stop()
-	s.clickRepo.Stop()
+func (svc *Service) Stop() {
+	svc.linkRepo.Stop()
+	svc.clickRepo.Stop()
 }
 
 func validateURL(rawURL string) error {
