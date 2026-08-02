@@ -156,6 +156,10 @@ func (svc *Service) DeleteLink(ctx context.Context, targetAlias string) error {
 }
 
 func (svc *Service) Redirect(ctx context.Context, targetAlias string) (string, error) {
+	if !isAliasValid(targetAlias) {
+		return "", ErrInvalidAlias
+	}
+
 	originUrl, err := svc.cache.Get(targetAlias)
 	if errors.Is(err, cache.CacheHit) {
 		return originUrl, nil
@@ -177,28 +181,6 @@ func (svc *Service) Redirect(ctx context.Context, targetAlias string) (string, e
 	svc.cache.Set(targetAlias, link.OriginalUrl, TTL)
 
 	return link.OriginalUrl, nil
-}
-
-func (svc *Service) CreateClick(ctx context.Context, alias string, ip string, userAgent, referrer *string) error {
-	if !isAliasValid(alias) {
-		return ErrInvalidAlias
-	}
-	// TODO: проверка валидности ip
-
-	_, isExists, err := svc.linkRepo.Get(ctx, alias)
-	if err != nil {
-		return err
-	} else if !isExists {
-		return ErrNotFound
-	}
-
-	// TODO: перенести обработку userAgent, referrer сюда из слоя репозитория
-	err = svc.clickRepo.Create(ctx, alias, ip, userAgent, referrer)
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
 
 func (svc *Service) GetTotalClicks(ctx context.Context, alias string) (string, int64, time.Time, error) {

@@ -18,7 +18,7 @@ func (r *MockLinkRepo) Create(ctx context.Context, originalUrl string, alias str
 func (r *MockLinkRepo) Get(ctx context.Context, alias string) (*models.ShortLink, bool, error) {
 	createdAt := time.Now()
 	switch alias {
-	case "existsRepo":
+	case "existsRepo", "existsCache":
 		return &models.ShortLink{
 			Id:          1,
 			ShortCode:   "rezect",
@@ -34,12 +34,12 @@ func (r *MockLinkRepo) Get(ctx context.Context, alias string) (*models.ShortLink
 }
 
 func (r *MockLinkRepo) Exists(ctx context.Context, alias string) (bool, error) {
-	return alias == "existsRepo", nil
+	return (alias == "existsRepo" || alias == "existsCache"), nil
 }
 
 func (r *MockLinkRepo) Delete(ctx context.Context, alias string) error {
 	switch alias {
-	case "existsRepo":
+	case "existsRepo", "existsCache":
 		return nil
 	case "internalError":
 		return errors.New("internal error")

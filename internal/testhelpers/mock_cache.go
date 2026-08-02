@@ -12,7 +12,7 @@ type MockCache struct{}
 func (c *MockCache) Get(key string) (string, error) {
 	switch key {
 	case "existsCache":
-		return "original link", cache.CacheHit
+		return "http://github.com/rezect", cache.CacheHit
 	case "notExistsCache":
 		return "", cache.NotExists
 	default:
@@ -25,7 +25,7 @@ func (c *MockCache) Set(key string, value any, ttl time.Duration) error {
 }
 
 func (c *MockCache) Delete(key string) error {
-	if key == "exists-cache" {
+	if key == "existsCache" {
 		return nil
 	} else {
 		return errors.New("key not found")
