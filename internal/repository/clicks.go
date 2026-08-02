@@ -77,7 +77,7 @@ func (r *ClickRepository) GetTotalClicks(ctx context.Context, shortCode string) 
 func (r *ClickRepository) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
 	rows, err := r.conn.Query(
 		ctx,
-		`SELECT COUNT(*) as total_clicks, DATE(clicked_at) as date FROM clicks WHERE short_code = $1 GROUP BY DATE(clicked_at) ORDER BY DATE(created_at) DESC`,
+		`SELECT COUNT(*) as total_clicks, DATE(clicked_at) as date FROM clicks WHERE short_code = $1 GROUP BY DATE(clicked_at) ORDER BY DATE(clicked_at) DESC`,
 		shortCode,
 	)
 	if err != nil {

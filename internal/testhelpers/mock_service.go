@@ -48,7 +48,7 @@ func (ls *MockService) GetTotalClicks(ctx context.Context, shortCode string) (st
 	return "", 0, time.Time{}, nil
 }
 
-func (ls *MockService) GetDailyClicks(ctx context.Context, shortCode string) (*map[time.Time]int, error) {
+func (ls *MockService) GetDailyClicks(ctx context.Context, shortCode string) (*map[string]int, error) {
 	return nil, nil
 }
 

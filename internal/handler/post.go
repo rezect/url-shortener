@@ -45,7 +45,3 @@ func (h *Handler) HandlerPost_CreateLink(w http.ResponseWriter, r *http.Request)
 		"created_at":   createdAt.Format(time.RFC3339),
 	})
 }
-
-type postClickData struct {
-	ShortCode string `json:"short_code"`
-}

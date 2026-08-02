@@ -83,12 +83,12 @@ func (svc *Service) CreateLink(ctx context.Context, originUrl string, customAlia
 		if errors.Is(err, cache.CacheHit) {
 			return "", time.Time{}, ErrAliasExists
 		} else if errors.Is(err, cache.CacheMiss) {
-			isExists, err := svc.linkRepo.Exists(ctx, customAlias)
+			originUrlFromRepo, isExists, err := svc.linkRepo.Get(ctx, customAlias)
 			if err != nil {
 				return "", time.Time{}, err
 			}
 			if isExists {
-				svc.cache.Set(customAlias, originUrl, TTL)
+				svc.cache.Set(customAlias, originUrlFromRepo, TTL)
 				return "", time.Time{}, ErrAliasExists
 			}
 		}
@@ -103,14 +103,14 @@ func (svc *Service) CreateLink(ctx context.Context, originUrl string, customAlia
 				break
 			}
 
-			isExists, err := svc.linkRepo.Exists(ctx, customAlias)
+			originUrlFromRepo, isExists, err := svc.linkRepo.Get(ctx, customAlias)
 			if err != nil {
 				return "", time.Time{}, err
 			}
 			if !isExists {
 				break
 			} else {
-				svc.cache.Set(customAlias, originUrl, TTL)
+				svc.cache.Set(customAlias, originUrlFromRepo, TTL)
 			}
 		}
 	}
@@ -210,7 +210,7 @@ func (svc *Service) GetTotalClicks(ctx context.Context, alias string) (string, i
 	return linkData.OriginalUrl, totalClicks, *linkData.CreatedAt, nil
 }
 
-func (svc *Service) GetDailyClicks(ctx context.Context, alias string) (*map[time.Time]int, error) {
+func (svc *Service) GetDailyClicks(ctx context.Context, alias string) (*map[string]int, error) {
 	if !isAliasValid(alias) {
 		return nil, ErrInvalidAlias
 	}
@@ -227,12 +227,23 @@ func (svc *Service) GetDailyClicks(ctx context.Context, alias string) (*map[time
 		return nil, err
 	}
 
-	return totalClicks, nil
+	totalClicksStringFormat := formatReport(totalClicks)
+
+	return totalClicksStringFormat, nil
 }
 
 func (svc *Service) Stop() {
 	svc.linkRepo.Stop()
 	svc.clickRepo.Stop()
+}
+
+func formatReport(stat *map[time.Time]int) *map[string]int {
+	stringStat := make(map[string]int)
+	for day, clicks := range *stat {
+		stringStat[day.Format(time.DateOnly)] = clicks
+	}
+
+	return &stringStat
 }
 
 func validateURL(rawURL string) error {
@@ -260,7 +271,10 @@ func validateURL(rawURL string) error {
 }
 
 func isAliasValid(code string) bool {
-	return regexp.MustCompile(`^[a-zA-Z0-9]+$`).MatchString(code)
+	if len(code) > 20 || len(code) < 6 {
+		return false
+	}
+	return regexp.MustCompile(`^[a-zA-Z0-9_-]+$`).MatchString(code)
 }
 
 func generateAlias() string {
