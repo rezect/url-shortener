@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/rezect/url-shortener/internal/middleware"
 	"github.com/rezect/url-shortener/internal/models"
 )
 
@@ -57,5 +58,7 @@ func (h *Handler) GetMux() http.Handler {
 	mux.HandleFunc("GET /api/v1/stats/{short_code}", h.HandlerGet_LinkStatistic)
 	mux.HandleFunc("GET /health", h.HandlerGet_Health)
 
-	return mux
+	logger := middleware.Logger(mux)
+
+	return logger
 }
