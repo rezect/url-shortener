@@ -145,7 +145,7 @@ func (svc *Service) DeleteLink(ctx context.Context, targetAlias string) error {
 			if err != nil {
 				return err
 			}
-			svc.cache.Delete(targetAlias)
+			svc.cache.Set(targetAlias, nil, TTL)
 			return nil
 		}
 	} else if errors.Is(err, cache.NotExists) {
